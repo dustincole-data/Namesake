@@ -1,0 +1,8 @@
+@import './tokens.css';
+* { box-sizing: border-box; }
+body {
+  margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  background: var(--ground); color: var(--ink);
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(33,69,110,.05) 27px, rgba(33,69,110,.05) 28px);
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: clamp(20px, 5vw, 64px); }

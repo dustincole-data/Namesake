@@ -1,0 +1,306 @@
+<title>Namesake — look study</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(20px, 5vw, 64px); }
+
+  /* ---------- intro strip ---------- */
+  .intro {
+    background: #16181d; color: #e7e3d8;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .intro .wrap { padding-top: 34px; padding-bottom: 34px; }
+  .intro .kick {
+    font: 600 12px/1 ui-monospace,'Cascadia Code','Consolas',monospace;
+    letter-spacing: .28em; text-transform: uppercase; color: #f6b24b;
+  }
+  .intro h1 {
+    margin: 14px 0 8px; font: 700 clamp(30px,6vw,52px)/1.02 Georgia,'Palatino Linotype',serif;
+    letter-spacing: -.01em;
+  }
+  .intro p { margin: 0; max-width: 60ch; color: #a7a394; font: 400 16px/1.55 system-ui, sans-serif; }
+  .intro .jump { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .intro .jump a {
+    font: 600 13px/1 system-ui, sans-serif; color: #e7e3d8; text-decoration: none;
+    padding: 9px 15px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
+  }
+  .intro .jump a:hover { background: rgba(255,255,255,.06); }
+  .intro .jump a:focus-visible { outline: 2px solid #f6b24b; outline-offset: 2px; }
+
+  /* ================= shared name-story skeleton ================= */
+  .story { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+  .story > .wrap { width: 100%; }
+  .eyebrow {
+    font: 600 12px/1 ui-monospace,'Cascadia Code','Consolas',monospace;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--accent); display: inline-block; }
+  .name { margin: 16px 0 6px; letter-spacing: -.02em; text-wrap: balance; color: var(--ink); }
+  .caption { margin: 0 0 6px; max-width: 30ch; color: var(--ink-soft); }
+
+  .chartwrap { margin: 30px 0 34px; position: relative; }
+  .chartwrap svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .peaklabel {
+    position: absolute; transform: translate(-50%, -100%);
+    font: 600 12px/1.3 ui-monospace,'Cascadia Code','Consolas',monospace;
+    color: var(--ink); text-align: center; pointer-events: none; white-space: nowrap;
+  }
+  .peaklabel b { display: block; font-size: 15px; }
+  .axis { display: flex; justify-content: space-between; margin-top: 8px;
+    font: 500 11px/1 ui-monospace,'Consolas',monospace; letter-spacing: .06em; color: var(--ink-soft); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+  .stat { background: var(--panel); padding: 18px 18px 16px; }
+  .stat .k { font: 600 11px/1 ui-monospace,'Consolas',monospace; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-soft); }
+  .stat .v { margin-top: 10px; font-variant-numeric: tabular-nums lining-nums;
+    font: 400 clamp(22px,3.4vw,30px)/1 var(--display); color: var(--ink); letter-spacing: -.01em; }
+  .stat .s { margin-top: 5px; font: 400 12.5px/1.35 system-ui, sans-serif; color: var(--ink-soft); }
+
+  .twins { margin-top: 30px; }
+  .twins .lab { font: 600 11px/1 ui-monospace,'Consolas',monospace; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-soft); margin-bottom: 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip { display: flex; align-items: center; gap: 11px; padding: 9px 14px 9px 12px;
+    border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); }
+  .chip svg { width: 46px; height: 18px; display: block; }
+  .chip span { font: 500 14px/1 var(--display); color: var(--ink); letter-spacing: .01em; }
+
+  .searchrow { margin-top: 40px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .fauxsearch { display: flex; align-items: center; gap: 10px; padding: 13px 18px;
+    border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); min-width: 260px; }
+  .fauxsearch .ph { font: 400 15px/1 system-ui, sans-serif; color: var(--ink-soft); }
+  .fauxsearch .cur { width: 1.5px; height: 18px; background: var(--accent); animation: blink 1.1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .searchrow .hint { font: 400 13px/1 system-ui, sans-serif; color: var(--ink-soft); }
+
+  /* ---------- Direction A · Vital Records (light) ---------- */
+  .dir-a {
+    --ground: #e7e2d3; --panel: #f0ebdf; --ink: #23201b; --ink-soft: #6b6252;
+    --rule: #cfc7b3; --accent: #21456e; --display: Georgia,'Palatino Linotype','Iowan Old Style',serif;
+    background: var(--ground); color: var(--ink);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(33,69,110,.05) 27px, rgba(33,69,110,.05) 28px);
+  }
+  .dir-a .name { font: 400 clamp(56px,13vw,132px)/.92 var(--display); }
+  .dir-a .caption { font: 400 clamp(17px,2.4vw,21px)/1.45 var(--display); font-style: italic; }
+  .dir-a .stamp {
+    display: inline-block; margin-top: 14px; padding: 5px 12px; transform: rotate(-3deg);
+    border: 1.5px solid #9e3b2c; color: #9e3b2c; border-radius: 3px;
+    font: 700 11px/1 ui-monospace,'Consolas',monospace; letter-spacing: .18em; text-transform: uppercase;
+  }
+
+  /* ---------- Direction B · Nightfall (dark, luminous) ---------- */
+  .dir-b {
+    --ground: #0d1120; --panel: rgba(255,255,255,.045); --ink: #f2ecde; --ink-soft: #99a0bb;
+    --rule: rgba(255,255,255,.10); --accent: #f6b24b;
+    --display: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(120% 90% at 78% 8%, rgba(246,178,75,.14), transparent 55%),
+      radial-gradient(90% 80% at 12% 100%, rgba(111,224,255,.10), transparent 55%),
+      linear-gradient(#0b0e1a, #121a30);
+  }
+  .dir-b .story { text-align: center; }
+  .dir-b .story .inner { margin: 0 auto; }
+  .dir-b .eyebrow { display: flex; justify-content: center; }
+  .dir-b .caption { margin-left: auto; margin-right: auto; }
+  .dir-b .name { font: 800 clamp(52px,12vw,118px)/.96 var(--display);
+    letter-spacing: -.03em; text-shadow: 0 0 42px rgba(246,178,75,.28); }
+  .dir-b .caption { font: 300 clamp(17px,2.4vw,21px)/1.5 system-ui, sans-serif; }
+  .dir-b .stats { grid-template-columns: repeat(4,1fr); }
+  .dir-b .searchrow { justify-content: center; }
+
+  @media (max-width: 720px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .story { min-height: auto; padding-top: 56px; padding-bottom: 56px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fauxsearch .cur { animation: none; }
+  }
+</style>
+
+<section class="intro">
+  <div class="wrap">
+    <div class="kick">Namesake · look study</div>
+    <h1>What does a name's life look like?</h1>
+    <p>A first pass at the visual direction — the “type your name” centerpiece, shown with <b>Dustin</b>.
+       Two treatments below; the data is illustrative. Tell me which feels right (or what to push).</p>
+    <div class="jump">
+      <a href="#a">↓ Direction A — Vital Records</a>
+      <a href="#b">↓ Direction B — Nightfall</a>
+    </div>
+  </div>
+</section>
+
+<section class="story dir-a" id="a">
+  <div class="wrap inner">
+    <div class="eyebrow">U.S. Social Security · 1880–2024</div>
+    <div class="name">Dustin</div>
+    <p class="caption">A name that arrived with the New Hollywood ’70s and crested in 1985.</p>
+    <div class="stamp">Peaked 1985</div>
+
+    <div class="chartwrap" data-chart="a"></div>
+    <div class="axis"><span>1880</span><span>1920</span><span>1960</span><span>2000</span><span>2024</span></div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Peak year</div><div class="v">1985</div><div class="s">the crest of the wave</div></div>
+      <div class="stat"><div class="k">Peak rank</div><div class="v">#123</div><div class="s">of all U.S. boys’ names</div></div>
+      <div class="stat"><div class="k">Skew</div><div class="v">99.2%</div><div class="s">given to boys</div></div>
+      <div class="stat"><div class="k">Median age today</div><div class="v">~40</div><div class="s">most Dustins born ’82–’88</div></div>
+    </div>
+
+    <div class="twins">
+      <div class="lab">Names that rose &amp; fell alongside it</div>
+      <div class="chips" data-twins="a"></div>
+    </div>
+
+    <div class="searchrow">
+      <div class="fauxsearch"><span class="ph">Dustin</span><span class="cur"></span></div>
+      <span class="hint">try any name →</span>
+    </div>
+  </div>
+</section>
+
+<section class="story dir-b" id="b">
+  <div class="wrap inner">
+    <div class="eyebrow">One name, 145 years</div>
+    <div class="name">Dustin</div>
+    <p class="caption">Almost no one, for eighty years — then a bright, brief bloom in the 1980s.</p>
+
+    <div class="chartwrap" data-chart="b"></div>
+    <div class="axis"><span>1880</span><span>1920</span><span>1960</span><span>2000</span><span>2024</span></div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Peak year</div><div class="v">1985</div><div class="s">the crest of the wave</div></div>
+      <div class="stat"><div class="k">Peak rank</div><div class="v">#123</div><div class="s">of all U.S. boys’ names</div></div>
+      <div class="stat"><div class="k">Skew</div><div class="v">99.2%</div><div class="s">given to boys</div></div>
+      <div class="stat"><div class="k">Median age today</div><div class="v">~40</div><div class="s">most Dustins born ’82–’88</div></div>
+    </div>
+
+    <div class="twins">
+      <div class="lab">Names that rose &amp; fell alongside it</div>
+      <div class="chips" data-twins="b"></div>
+    </div>
+
+    <div class="searchrow">
+      <div class="fauxsearch"><span class="ph">Dustin</span><span class="cur"></span></div>
+      <span class="hint">try any name →</span>
+    </div>
+  </div>
+</section>
+
+<script>
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const gauss = (y, mu, s) => Math.exp(-((y - mu) ** 2) / (2 * s * s));
+  // illustrative popularity curve for "Dustin", 1880..2024, normalized 0..1
+  const YEARS = [];
+  for (let y = 1880; y <= 2024; y++) YEARS.push(y);
+  const raw = YEARS.map(y => 0.92 * gauss(y, 1985, 10) + 0.5 * gauss(y, 1974, 8) + 0.06 * gauss(y, 1999, 15) + 0.004);
+  const max = Math.max(...raw);
+  const data = raw.map(v => v / max);
+  const peakIdx = data.indexOf(Math.max(...data));
+
+  const W = 1000, H = 380, PAD = 6;
+  const xAt = i => PAD + (i / (data.length - 1)) * (W - PAD * 2);
+  const yAt = v => H - PAD - v * (H - PAD * 2);
+
+  function pathFor(vals) {
+    let line = "", area = "";
+    vals.forEach((v, i) => {
+      const x = xAt(i), y = yAt(v);
+      line += (i ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+    });
+    area = line + "L" + xAt(vals.length - 1).toFixed(1) + " " + (H - PAD) + " L" + xAt(0).toFixed(1) + " " + (H - PAD) + " Z";
+    return { line, area };
+  }
+
+  function buildChart(el, dir) {
+    const { line, area } = pathFor(data);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Popularity of the name Dustin from 1880 to 2024, peaking in 1985.");
+    const uid = "g" + dir;
+    const ink = dir === "a" ? "#21456e" : "#f6b24b";
+    const fillStops = dir === "a"
+      ? `<stop offset="0" stop-color="${ink}" stop-opacity=".16"/><stop offset="1" stop-color="${ink}" stop-opacity="0"/>`
+      : `<stop offset="0" stop-color="${ink}" stop-opacity=".42"/><stop offset="1" stop-color="${ink}" stop-opacity="0"/>`;
+    const glow = dir === "b" ? `<filter id="${uid}f" x="-20%" y="-40%" width="140%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>` : "";
+    svg.innerHTML = `
+      <defs><linearGradient id="${uid}" x1="0" y1="0" x2="0" y2="1">${fillStops}</linearGradient>${glow}</defs>
+      <path d="${area}" fill="url(#${uid})" opacity="0" class="area"/>
+      ${dir === "b" ? `<path d="${line}" fill="none" stroke="${ink}" stroke-width="6" stroke-opacity=".45" filter="url(#${uid}f)" class="glowline"/>` : ""}
+      <path d="${line}" fill="none" stroke="${ink}" stroke-width="${dir === "a" ? 2.25 : 2.75}" stroke-linecap="round" stroke-linejoin="round" class="line"/>
+      <circle cx="${xAt(peakIdx).toFixed(1)}" cy="${yAt(data[peakIdx]).toFixed(1)}" r="${dir === "a" ? 4 : 5}" fill="${dir === "a" ? "#9e3b2c" : ink}" class="dot" opacity="0"/>
+    `;
+    el.appendChild(svg);
+
+    // peak label positioned over the dot (percentages of the chart box)
+    const lab = document.createElement("div");
+    lab.className = "peaklabel";
+    lab.style.left = (xAt(peakIdx) / W * 100) + "%";
+    lab.style.top = (yAt(data[peakIdx]) / H * 100) - 3 + "%";
+    lab.innerHTML = "<b>1985</b>most Dustins born";
+    el.appendChild(lab);
+
+    const lines = svg.querySelectorAll(".line,.glowline");
+    const area_ = svg.querySelector(".area");
+    const dot = svg.querySelector(".dot");
+    lab.style.opacity = "0"; lab.style.transition = "opacity .5s ease .9s";
+
+    function animate() {
+      if (reduce) { area_.style.opacity = 1; dot.setAttribute("opacity", "1"); lab.style.opacity = 1; return; }
+      lines.forEach(ln => {
+        const len = ln.getTotalLength();
+        ln.style.strokeDasharray = len; ln.style.strokeDashoffset = len;
+        ln.getBoundingClientRect();
+        ln.style.transition = "stroke-dashoffset 1.7s cubic-bezier(.4,0,.15,1)";
+        ln.style.strokeDashoffset = "0";
+      });
+      area_.style.transition = "opacity 1.2s ease .5s"; area_.style.opacity = 1;
+      dot.style.transition = "opacity .4s ease 1.5s"; dot.setAttribute("opacity", "1");
+      requestAnimationFrame(() => lab.style.opacity = 1);
+    }
+    return animate;
+  }
+
+  function sparkline(dir, shift) {
+    const vals = YEARS.map(y => gauss(y, 1985 + shift, 9 + Math.abs(shift) / 3));
+    const m = Math.max(...vals);
+    const w = 46, h = 18;
+    let d = "";
+    vals.forEach((v, i) => {
+      const x = (i / (vals.length - 1)) * w;
+      const yy = h - (v / m) * (h - 3) - 1.5;
+      d += (i ? "L" : "M") + x.toFixed(1) + " " + yy.toFixed(1) + " ";
+    });
+    const ink = dir === "a" ? "#21456e" : "#f6b24b";
+    return `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="${ink}" stroke-width="1.6" stroke-opacity=".85" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  const twinNames = [["Travis", -3], ["Cody", 4], ["Jared", -1], ["Brandon", 2], ["Derek", -4]];
+  document.querySelectorAll("[data-twins]").forEach(box => {
+    const dir = box.getAttribute("data-twins");
+    box.innerHTML = twinNames.map(([n, s]) =>
+      `<span class="chip">${sparkline(dir, s)}<span>${n}</span></span>`).join("");
+  });
+
+  const animators = [];
+  document.querySelectorAll("[data-chart]").forEach(el => {
+    animators.push([el, buildChart(el, el.getAttribute("data-chart"))]);
+  });
+
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const found = animators.find(a => a[0] === e.target);
+        if (found && !found[2]) { found[2] = true; found[1](); }
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: .35 });
+  animators.forEach(a => io.observe(a[0]));
+</script>

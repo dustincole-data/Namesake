@@ -1,0 +1,21 @@
+{
+  "name": "namesake",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "vitest run",
+    "data": "node --experimental-strip-types pipeline/src/build.ts",
+    "og": "node --experimental-strip-types scripts/og.ts"
+  },
+  "dependencies": {
+    "astro": "^5.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "satori": "^0.12.0"
+  }
+}

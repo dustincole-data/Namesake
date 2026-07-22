@@ -1,0 +1,11 @@
+:root {
+  --ground:  #e7e2d3;
+  --panel:   #f0ebdf;
+  --ink:     #23201b;
+  --ink-soft:#6b6252;
+  --rule:    #cfc7b3;
+  --accent:  #21456e;
+  --stamp:   #9e3b2c;
+  --display: Georgia,'Palatino Linotype','Iowan Old Style',serif;
+  --mono: ui-monospace,'Cascadia Code','Consolas',monospace;
+}
