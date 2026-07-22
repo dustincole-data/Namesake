@@ -7,3 +7,6 @@ export function shardKey(slug: string): string {
   const b = slug[1] ?? '_';
   return (/[a-z0-9]/.test(a) ? a : '_') + (/[a-z0-9]/.test(b) ? b : '_');
 }
+
+export function rankLabel(rank: number): string { return `#${rank}`; }
+export function pct(x: number, dp = 1): string { return `${(x * 100).toFixed(dp)}%`; }
