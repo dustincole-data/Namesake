@@ -3,3 +3,4 @@ dist/
 .astro/
 pipeline/raw/
 *.zip
+public/data/

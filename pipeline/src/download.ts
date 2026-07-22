@@ -11,7 +11,7 @@ export async function downloadSSA(destDir: string): Promise<string[]> {
   if (existing.length >= 145) return existing.sort().map(f => join(destDir, f));
 
   const require = createRequire(import.meta.url);
-  const AdmZip = require('adm-zip'); // npm i -D adm-zip
+  const AdmZip = require('adm-zip');
   const res = await fetch(SSA_URL);
   if (!res.ok) throw new Error(`SSA download failed: ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
@@ -24,5 +24,6 @@ export async function downloadSSA(destDir: string): Promise<string[]> {
       paths.push(p);
     }
   }
+  if (paths.length < 100) throw new Error(`SSA extraction produced only ${paths.length} yob*.txt files, expected 100+`);
   return paths.sort();
 }
