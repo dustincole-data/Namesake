@@ -28,11 +28,14 @@ async function main() {
   const rawDir = join(ROOT, 'pipeline', 'raw');
   const files = await downloadSSA(rawDir);
   const records: RawRecord[] = [];
+  const yearsIngested = new Set<number>();
   for (const f of files) {
     const year = Number(basename(f).match(/\d{4}/)![0]);
+    if (year < START_YEAR || year > END_YEAR) continue;
+    yearsIngested.add(year);
     records.push(...parseYobFile(await readFile(f, 'utf8'), year));
   }
-  console.log(`parsed ${records.length} records across ${files.length} years`);
+  console.log(`parsed ${records.length} records across ${yearsIngested.size} years`);
 
   const { aggs, totalBirthsByYear } = indexRecords(records);
   const ranks = computeRanks(records);

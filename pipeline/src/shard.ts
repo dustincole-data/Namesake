@@ -20,7 +20,12 @@ export async function writeArtifacts(
   const shards = new Map<string, Record<string, NamePayload>>();
   for (const p of payloads) {
     const k = shardKey(p.slug);
-    (shards.get(k) ?? shards.set(k, {}).get(k)!)[p.slug] = p;
+    const shard = shards.get(k) ?? shards.set(k, {}).get(k)!;
+    const existing = shard[p.slug];
+    if (existing && existing.name !== p.name) {
+      throw new Error(`slug collision in shard "${k}": "${existing.name}" and "${p.name}" both map to slug "${p.slug}"`);
+    }
+    shard[p.slug] = p;
   }
   for (const [k, obj] of shards) await writeFile(join(outDir, 'names', `${k}.json`), JSON.stringify(obj));
 
