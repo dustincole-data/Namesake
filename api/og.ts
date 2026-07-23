@@ -8,9 +8,11 @@ import { shardKey } from '../src/lib/format.ts';
 // @vercel/og). The canonical /name/<slug> page still unfurls the static
 // build-time card in public/og; this route powers the birth-year reveal's
 // "Share your card" link, which carries the viewer's year.
-export const config = { runtime: 'edge' };
-
-export default async function handler(req: Request): Promise<Response> {
+//
+// Runs on the default Node.js runtime (not edge): edge's bundler can't trace
+// relative imports that live outside /api, which the shared src/lib and
+// scripts/card modules require.
+async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const slug = (url.searchParams.get('slug') || '').toLowerCase();
   const yearRaw = Number(url.searchParams.get('year'));
@@ -43,3 +45,5 @@ export default async function handler(req: Request): Promise<Response> {
     fonts: [{ name: 'Gelasio', data: font, weight: 400, style: 'normal' }],
   });
 }
+
+export default { fetch: handler };

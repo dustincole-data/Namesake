@@ -31,10 +31,10 @@ satori + @resvg/resvg-js for build-time share cards. No in-browser model; ~1s lo
 ## Deploy (standalone Vercel project)
 
 Namesake is its own Vercel project served at its own subdomain — no rewrite/proxy on
-the main site. It is static except for **one edge function** (`api/og.ts`, `@vercel/og`)
-that renders the personalized name+year share cards on demand — so runtime compute is
-near-zero and only touched when someone shares a card. The canonical `/name/<slug>`
-page unfurls the static build-time card in `public/og/`.
+the main site. It is static except for **one serverless function** (`api/og.ts`,
+`@vercel/og`, Node.js runtime) that renders the personalized name+year share cards on
+demand — so runtime compute is near-zero and only touched when someone shares a card.
+The canonical `/name/<slug>` page unfurls the static build-time card in `public/og/`.
 
 **1. Namesake Vercel project**
 - Push this repo to GitHub; import as a **new** Vercel project.
@@ -56,7 +56,7 @@ page unfurls the static build-time card in `public/og/`.
 - `/name/zzzznotaname` ("No record found")
 - OG: `/og/dustin.png` resolves; paste a name link into a social-card debugger.
 - Reveal: on a name page, enter a birth year → badge + count + chart marker appear.
-- Personalized card: `/api/og?slug=dustin&year=1990` renders a PNG (edge function).
+- Personalized card: `/api/og?slug=dustin&year=1990` renders a PNG (serverless function).
 - Redirect: bare `/name` → `/`.
 
 ## Yearly refresh
