@@ -1,0 +1,20 @@
+---
+const { autofocus = false } = Astro.props as { autofocus?: boolean };
+---
+<div class="search" data-search>
+  <input type="text" placeholder="Type a name…" aria-label="Search for a name"
+    autocomplete="off" spellcheck="false" autofocus={autofocus} />
+  <ul class="results" role="listbox" hidden></ul>
+</div>
+<style>
+  .search { position: relative; max-width: 420px; }
+  .search input { width: 100%; padding: 14px 18px; border: 1px solid var(--rule); border-radius: 999px;
+    background: var(--panel); color: var(--ink); font: 400 16px/1 var(--display); }
+  .search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .results { position: absolute; z-index: 5; left: 0; right: 0; margin: 6px 0 0; padding: 6px; list-style: none;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 14px; max-height: 300px; overflow: auto; }
+  .results li a { display: block; padding: 9px 12px; border-radius: 8px; text-decoration: none;
+    color: var(--ink); font: 500 15px/1 var(--display); }
+  .results li a:hover, .results li a:focus-visible { background: var(--ground); }
+</style>
+<script src="../scripts/search.ts"></script>

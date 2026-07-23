@@ -1,0 +1,40 @@
+---
+import type { NamePayload } from '../lib/types.ts';
+import PopularityChart from './PopularityChart.astro';
+import StatTiles from './StatTiles.astro';
+import TwinChips from './TwinChips.astro';
+import SearchBox from './SearchBox.astro';
+const { payload } = Astro.props as { payload: NamePayload };
+const n = payload.curve.length;
+---
+<section class="story">
+  <div class="wrap">
+    <div class="eyebrow">U.S. Social Security · {payload.startYear}–{payload.startYear + n - 1}</div>
+    <h1 class="name">{payload.name}</h1>
+    <p class="caption">{payload.caption}</p>
+    <div class="stamp">Peaked {payload.peakYear}</div>
+
+    <PopularityChart payload={payload} />
+    <StatTiles payload={payload} />
+    <TwinChips twins={payload.twins} />
+
+    <div class="searchrow"><SearchBox /><span class="hint">try any name →</span></div>
+  </div>
+</section>
+<style>
+  .story { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+  .story > .wrap { width: 100%; }
+  .eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .24em; text-transform: uppercase; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 10px; }
+  .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--accent); display: inline-block; }
+  .name { margin: 16px 0 6px; letter-spacing: -.02em; text-wrap: balance; color: var(--ink);
+    font: 400 clamp(56px,13vw,132px)/.92 var(--display); }
+  .caption { margin: 0 0 6px; max-width: 30ch; color: var(--ink-soft);
+    font: 400 clamp(17px,2.4vw,21px)/1.45 var(--display); font-style: italic; }
+  .stamp { display: inline-block; margin-top: 14px; padding: 5px 12px; transform: rotate(-3deg);
+    border: 1.5px solid var(--stamp); color: var(--stamp); border-radius: 3px;
+    font: 700 11px/1 var(--mono); letter-spacing: .18em; text-transform: uppercase; }
+  .searchrow { margin-top: 40px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .searchrow .hint { font: 400 13px/1 system-ui, sans-serif; color: var(--ink-soft); }
+  @media (max-width: 720px) { .story { min-height: auto; padding-top: 56px; padding-bottom: 56px; } }
+</style>

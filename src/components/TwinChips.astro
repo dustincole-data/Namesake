@@ -1,0 +1,30 @@
+---
+import type { TwinData } from '../lib/types.ts';
+import { buildSparkPath } from '../lib/chart.ts';
+const { twins } = Astro.props as { twins: TwinData[] };
+const base = import.meta.env.BASE_URL;
+---
+{twins.length > 0 && (
+  <div class="twins">
+    <div class="lab">Names that rose &amp; fell alongside it</div>
+    <div class="chips">
+      {twins.map(t => (
+        <a class="chip" href={`${base}/name/${t.slug}`}>
+          <svg viewBox="0 0 46 18" aria-hidden="true"><path d={buildSparkPath(t.spark, 46, 18)}
+            fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-opacity=".85"
+            stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <span>{t.name}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+<style>
+  .twins { margin-top: 30px; }
+  .twins .lab { font: 600 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 14px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip { display: flex; align-items: center; gap: 11px; padding: 9px 14px 9px 12px;
+    border: 1px solid var(--rule); border-radius: 999px; background: var(--panel); text-decoration: none; }
+  .chip svg { width: 46px; height: 18px; display: block; }
+  .chip span { font: 500 14px/1 var(--display); color: var(--ink); letter-spacing: .01em; }
+</style>
