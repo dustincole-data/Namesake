@@ -15,7 +15,8 @@ export async function getStaticPaths() {
 }
 const { payload } = Astro.props as { payload: NamePayload };
 const title = `${payload.name} — a name's life story | Namesake`;
-const ogPath = `${Astro.site}projects/namesake/og/${payload.slug}.png`.replace(/([^:]\/)\/+/g, '$1');
+const base = import.meta.env.BASE_URL;
+const ogPath = `${Astro.site}${base.replace(/^\//, '')}og/${payload.slug}.png`.replace(/([^:]\/)\/+/g, '$1');
 ---
 <html lang="en"><head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />

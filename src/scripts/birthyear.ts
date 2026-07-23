@@ -1,6 +1,6 @@
 import { slugify } from '../lib/format.ts';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 for (const el of document.querySelectorAll<HTMLElement>('[data-birthyear]')) {
   const map = JSON.parse(el.dataset.map!) as Record<string, { M: string[]; F: string[] }>;

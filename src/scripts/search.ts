@@ -1,6 +1,6 @@
 import { slugify } from '../lib/format.ts';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 let names: [string, string][] | null = null;
 
 async function load() {

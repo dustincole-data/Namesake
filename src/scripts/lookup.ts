@@ -2,7 +2,7 @@ import { buildLinePath, buildSparkPath } from '../lib/chart.ts';
 import { rankLabel, shardKey } from '../lib/format.ts';
 import type { NamePayload } from '../lib/types.ts';
 
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const slug = decodeURIComponent(location.pathname.replace(/\/$/, '').split('/').pop() || '');
 
 async function run() {

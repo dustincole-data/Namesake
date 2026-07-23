@@ -2,7 +2,7 @@
 import type { ExploreItem } from '../lib/types.ts';
 import { buildSparkPath } from '../lib/chart.ts';
 const { title, blurb, items } = Astro.props as { title: string; blurb: string; items: ExploreItem[] };
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 <section class="panel">
   <h2>{title}</h2>

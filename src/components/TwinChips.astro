@@ -2,7 +2,7 @@
 import type { TwinData } from '../lib/types.ts';
 import { buildSparkPath } from '../lib/chart.ts';
 const { twins } = Astro.props as { twins: TwinData[] };
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 {twins.length > 0 && (
   <div class="twins">
