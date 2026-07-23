@@ -1,0 +1,38 @@
+---
+import type { ExploreData } from '../lib/types.ts';
+const { nameOfYear } = Astro.props as { nameOfYear: ExploreData['nameOfYear'] };
+const years = Object.keys(nameOfYear).map(Number).sort((a, b) => a - b);
+const minY = years[0], maxY = years[years.length - 1];
+const defaultY = 2000;
+---
+<section class="birthyear" data-birthyear data-map={JSON.stringify(nameOfYear)}>
+  <div class="head">
+    <h2>The names of your birth year</h2>
+    <div class="control">
+      <label for="by-input">Born in</label>
+      <input id="by-input" type="number" min={minY} max={maxY} value={defaultY} inputmode="numeric" />
+    </div>
+  </div>
+  <div class="cols">
+    <div class="col"><div class="lab">Top boys&rsquo; names</div><div class="list" data-slot="M"></div></div>
+    <div class="col"><div class="lab">Top girls&rsquo; names</div><div class="list" data-slot="F"></div></div>
+  </div>
+</section>
+<style>
+  .birthyear { margin: 8px 0 80px; padding: 34px; border: 1px solid var(--rule); border-radius: 18px; background: var(--panel);
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(33,69,110,.05) 27px, rgba(33,69,110,.05) 28px); }
+  .head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+  .head h2 { margin: 0; font: 400 clamp(24px,3.4vw,34px)/1 var(--display); color: var(--ink); }
+  .control { display: flex; align-items: center; gap: 10px; font: 400 15px/1 var(--display); font-style: italic; color: var(--ink-soft); }
+  .control input { width: 96px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--ground);
+    color: var(--ink); font: 400 18px/1 var(--display); font-variant-numeric: tabular-nums; }
+  .control input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .lab { font: 600 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 12px; }
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .list a { font: 400 clamp(20px,3vw,28px)/1.15 var(--display); color: var(--ink); text-decoration: none; width: fit-content; }
+  .list a:hover, .list a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+  .list a .rank { font: 500 12px/1 var(--mono); color: var(--ink-soft); margin-right: 10px; }
+  @media (max-width: 560px) { .cols { grid-template-columns: 1fr; } }
+</style>
+<script src="../scripts/birthyear.ts"></script>

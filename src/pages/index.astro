@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import SearchBox from '../components/SearchBox.astro';
 import ExplorePanel from '../components/ExplorePanel.astro';
+import BirthYearPanel from '../components/BirthYearPanel.astro';
 import { readExplore } from '../lib/data.ts';
 const ex = await readExplore();
 ---
@@ -26,6 +27,8 @@ const ex = await readExplore();
     <ExplorePanel title="Comebacks" blurb="Names roaring back after decades away." items={ex.comebacks} />
     <ExplorePanel title="The unisex line" blurb="Names shared across the gender divide." items={ex.unisex} />
   </div>
+
+  <BirthYearPanel nameOfYear={ex.nameOfYear} />
 </main></body></html>
 
 <style>
