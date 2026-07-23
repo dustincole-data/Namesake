@@ -4,7 +4,7 @@ const { autofocus = false } = Astro.props as { autofocus?: boolean };
 <div class="search" data-search>
   <input type="text" placeholder="Type a name…" aria-label="Search for a name"
     autocomplete="off" spellcheck="false" autofocus={autofocus} />
-  <ul class="results" role="listbox" hidden></ul>
+  <ul class="results" role="listbox" hidden aria-live="polite"></ul>
 </div>
 <style>
   .search { position: relative; max-width: 420px; }
