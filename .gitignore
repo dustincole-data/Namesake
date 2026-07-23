@@ -4,3 +4,4 @@ dist/
 pipeline/raw/
 *.zip
 public/data/
+public/og/
