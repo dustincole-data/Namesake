@@ -30,9 +30,9 @@ const defaultY = 2000;
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .lab { font: 600 11px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 12px; }
   .list { display: flex; flex-direction: column; gap: 6px; }
-  .list a { font: 400 clamp(20px,3vw,28px)/1.15 var(--display); color: var(--ink); text-decoration: none; width: fit-content; }
-  .list a:hover, .list a:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
-  .list a .rank { font: 500 12px/1 var(--mono); color: var(--ink-soft); margin-right: 10px; }
+  .list :global(a) { font: 400 clamp(20px,3vw,28px)/1.15 var(--display); color: var(--ink); text-decoration: none; width: fit-content; }
+  .list :global(a:hover), .list :global(a:focus-visible) { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+  .list :global(a .rank) { font: 500 12px/1 var(--mono); color: var(--ink-soft); margin-right: 10px; }
   @media (max-width: 560px) { .cols { grid-template-columns: 1fr; } }
 </style>
 <script src="../scripts/birthyear.ts"></script>
