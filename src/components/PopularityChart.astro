@@ -10,17 +10,22 @@ const peakX = (PAD + (peakIdx / (n - 1)) * (W - PAD * 2));
 const peakY = (H - PAD - (payload.curve[peakIdx] / 1000) * (H - PAD * 2));
 const label = `Popularity of the name ${payload.name} from ${payload.startYear} to ${payload.startYear + n - 1}, peaking in ${payload.peakYear}.`;
 ---
-<div class="chartwrap" data-chart data-peak-x={(peakX / W * 100).toFixed(2)} data-peak-y={(peakY / H * 100).toFixed(2)} data-peak-year={payload.peakYear}>
-  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label}>
+<div class="chartwrap" data-chart data-peak-x={(peakX / W * 100).toFixed(2)} data-peak-y={(peakY / H * 100).toFixed(2)} data-peak-year={payload.peakYear}
+     data-curve={JSON.stringify(payload.curve)} data-start-year={payload.startYear} data-max-share={payload.maxShare}
+     data-w={W} data-h={H} data-pad={PAD}>
+  <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} tabindex="0">
     <defs><linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="var(--accent)" stop-opacity=".16" />
       <stop offset="1" stop-color="var(--accent)" stop-opacity="0" />
     </linearGradient></defs>
     <path d={area} fill="url(#fill)" opacity="0" class="area" />
     <path d={line} fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="line" />
+    <line class="guide" y1={PAD} y2={H - PAD} stroke="var(--rule)" stroke-width="1.25" opacity="0" />
     <circle cx={peakX.toFixed(1)} cy={peakY.toFixed(1)} r="4" fill="var(--stamp)" class="dot" opacity="0" />
+    <circle class="cursor" r="4.5" fill="var(--accent)" stroke="var(--panel)" stroke-width="2" opacity="0" />
   </svg>
   <div class="peaklabel"><b>{payload.peakYear}</b>peak</div>
+  <div class="readout" role="status" aria-live="polite"><b class="ry"></b><span class="rs"></span></div>
 </div>
 <div class="axis"><span>{payload.startYear}</span><span>1920</span><span>1960</span><span>2000</span><span>{payload.startYear + n - 1}</span></div>
 

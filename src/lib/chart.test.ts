@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLinePath, buildSparkPath } from './chart.ts';
+import { buildLinePath, buildSparkPath, xAtIndex, yAtValue, xToIndex, shareAt } from './chart.ts';
 
 describe('buildLinePath', () => {
   it('starts with M, uses L for subsequent points, closes the area', () => {
@@ -35,5 +35,30 @@ describe('buildSparkPath', () => {
     const { line, area } = buildLinePath([500], 1000, 380, 6);
     expect(line).not.toContain('NaN');
     expect(area).not.toContain('NaN');
+  });
+});
+
+describe('scrub geometry helpers', () => {
+  it('xToIndex is the inverse of xAtIndex across the series', () => {
+    const n = 146, W = 1000, pad = 6;
+    for (const i of [0, 1, 42, 100, n - 1]) {
+      expect(xToIndex(xAtIndex(i, n, W, pad), n, W, pad)).toBe(i);
+    }
+  });
+  it('xToIndex clamps out-of-range x to the endpoints', () => {
+    expect(xToIndex(-500, 146, 1000, 6)).toBe(0);
+    expect(xToIndex(9999, 146, 1000, 6)).toBe(145);
+  });
+  it('xToIndex returns 0 for a single-point series', () => {
+    expect(xToIndex(500, 1, 1000, 6)).toBe(0);
+  });
+  it('yAtValue puts the max value near the top and 0 at the baseline', () => {
+    expect(yAtValue(1000, 380, 6)).toBeLessThan(yAtValue(0, 380, 6));
+    expect(yAtValue(0, 380, 6)).toBeCloseTo(380 - 6);
+  });
+  it('shareAt scales the normalized curve value by peak share', () => {
+    expect(shareAt(1000, 0.02)).toBeCloseTo(0.02); // peak year = peak share
+    expect(shareAt(500, 0.02)).toBeCloseTo(0.01);
+    expect(shareAt(0, 0.02)).toBe(0);
   });
 });

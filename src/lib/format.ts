@@ -10,3 +10,11 @@ export function shardKey(slug: string): string {
 
 export function rankLabel(rank: number): string { return `#${rank}`; }
 export function pct(x: number, dp = 1): string { return `${(x * 100).toFixed(dp)}%`; }
+
+/** "1 in N" framing of a per-year birth share, for the chart scrub readout. */
+export function oneInLabel(share: number): string {
+  if (share <= 0) return 'no recorded use';
+  const n = Math.round(1 / share);
+  if (n >= 1_000_000) return 'fewer than 1 in a million';
+  return `1 in ${n.toLocaleString('en-US')}`;
+}
