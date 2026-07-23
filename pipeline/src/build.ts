@@ -59,15 +59,17 @@ async function main() {
     });
   }
 
-  // Twins over candidates
+  // Twins over candidates, matched within the same dominant sex
   const candidates = stats.filter(s => (s.agg.totalBySex.M + s.agg.totalBySex.F) >= TWIN_THRESHOLD);
-  const vectors = new Map(candidates.map(s => [s.slug, shapeVector(s.shares)]));
+  const vectorsBySex = { M: new Map<string, number[]>(), F: new Map<string, number[]>() };
+  for (const s of candidates) vectorsBySex[s.dominantSex].set(s.slug, shapeVector(s.shares));
   const curveBySlug = new Map(stats.map(s => [s.slug, s.curve]));
   const nameBySlug = new Map(stats.map(s => [s.slug, s.name]));
 
   const payloads: NamePayload[] = stats.map(s => {
-    const twins: TwinData[] = vectors.has(s.slug)
-      ? topTwins(s.slug, vectors, 5).map(t => ({
+    const vm = vectorsBySex[s.dominantSex];
+    const twins: TwinData[] = vm.has(s.slug)
+      ? topTwins(s.slug, vm, 5).map(t => ({
           name: nameBySlug.get(t.slug)!, slug: t.slug, spark: downsample(curveBySlug.get(t.slug)!, 40),
         }))
       : [];
