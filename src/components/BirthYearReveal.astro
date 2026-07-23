@@ -1,0 +1,18 @@
+---
+import type { NamePayload } from '../lib/types.ts';
+const { payload, births } = Astro.props as { payload: NamePayload; births: number[] };
+const endYear = payload.startYear + payload.curve.length - 1;
+---
+<section class="reveal" data-reveal
+  data-curve={JSON.stringify(payload.curve)}
+  data-births={JSON.stringify(births)}
+  data-start={payload.startYear} data-peak={payload.peakYear}
+  data-max={payload.maxShare} data-slug={payload.slug} data-name={payload.name}>
+  <div class="ask">
+    <label for="by-reveal">When were you born?</label>
+    <input id="by-reveal" type="number" inputmode="numeric" min={payload.startYear} max={endYear} placeholder="1990" />
+    <span class="asklabel">→ see where you land on {payload.name}&rsquo;s curve</span>
+  </div>
+  <div class="revealcard" data-out aria-live="polite" hidden></div>
+</section>
+<script src="../scripts/reveal.ts"></script>

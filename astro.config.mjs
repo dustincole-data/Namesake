@@ -5,4 +5,6 @@ export default defineConfig({
   base: '/',
   output: 'static',
   trailingSlash: 'ignore',
+  // Bare /name has no page (routes are /name/[slug] and /name/lookup) — send it home.
+  redirects: { '/name': '/' },
 });

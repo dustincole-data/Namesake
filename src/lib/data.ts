@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { NamePayload, ExploreData } from './types.ts';
+import type { NamePayload, ExploreData, RankEquiv } from './types.ts';
 import { shardKey } from './format.ts';
 
 // Resolved from process.cwd() (project root, per npm script invocation) rather than
@@ -20,4 +20,10 @@ export async function readPayload(slug: string): Promise<NamePayload | null> {
 }
 export async function readExplore(): Promise<ExploreData> {
   return JSON.parse(await readFile(join(DATA, 'explore.json'), 'utf8'));
+}
+export async function readBirths(): Promise<number[]> {
+  return JSON.parse(await readFile(join(DATA, 'births.json'), 'utf8'));
+}
+export async function readEquiv(): Promise<RankEquiv> {
+  return JSON.parse(await readFile(join(DATA, 'equiv.json'), 'utf8'));
 }

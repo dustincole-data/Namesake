@@ -1,0 +1,27 @@
+---
+import type { NamePayload } from '../lib/types.ts';
+import { archetypeOf } from '../lib/archetype.ts';
+const { payload } = Astro.props as { payload: NamePayload };
+const end = payload.startYear + payload.curve.length - 1;
+const arch = archetypeOf(payload.archetype);
+---
+<details class="method">
+  <summary>How to read this — sources &amp; method</summary>
+  <div class="methodbody">
+    <p><b>Source.</b> U.S. Social Security card applications, {payload.startYear}&ndash;{end}. A name is
+      published only in years it was given to <b>at least 5</b> babies, so rare and very recent names
+      can be missing or clipped.</p>
+    <p><b>Raw, not modeled.</b> Every number here is counted, not estimated: yearly births, national
+      rank, peak year, and the median birth year (the year by which half of everyone ever given the
+      name had been born).</p>
+    <p><b>&ldquo;Peak&rdquo;</b> is the year the name was most common <i>relative to all births that year</i> &mdash;
+      its cultural high-water mark, not just its largest raw count.</p>
+    <p><b>Modern rank-equivalent</b> compares rank <i>position</i> across eras (a #40 name then vs. a
+      #40 name today), not absolute frequency &mdash; far fewer names were recorded a century ago.</p>
+    <p><b>{arch.label}, and the birth-year badge,</b> are assigned by fixed rules over the name&rsquo;s
+      curve ({arch.blurb.toLowerCase()}).</p>
+    <p class="methodnote">We deliberately don&rsquo;t print a &ldquo;typical age&rdquo; &mdash; estimating how many bearers
+      are still living needs a mortality model, which is an estimate, not a count. The median birth
+      year above is the honest, unmodeled version.</p>
+  </div>
+</details>

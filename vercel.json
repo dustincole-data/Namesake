@@ -3,6 +3,9 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/name", "destination": "/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/name/:slug", "destination": "/name/lookup" }
   ]

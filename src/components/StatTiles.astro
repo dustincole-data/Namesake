@@ -1,13 +1,15 @@
 ---
 import type { NamePayload } from '../lib/types.ts';
 import { rankLabel } from '../lib/format.ts';
-const { payload } = Astro.props as { payload: NamePayload };
+const { payload, equivName } = Astro.props as { payload: NamePayload; equivName: string | null };
 const skewSex = payload.dominantSex === 'F' ? 'girls' : 'boys';
+const compact = (n: number) => n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
 const tiles = [
-  { k: 'Peak year', v: String(payload.peakYear), s: 'the crest of the wave' },
-  { k: 'Peak rank', v: Number.isFinite(payload.peakRank) ? rankLabel(payload.peakRank) : '—', s: `of all U.S. ${skewSex}’ names` },
+  { k: 'Peak rank', v: Number.isFinite(payload.peakRank) ? rankLabel(payload.peakRank) : '—',
+    s: equivName ? `as high as ${equivName} sits today` : `of all U.S. ${skewSex}’ names` },
   { k: 'Skew', v: `${payload.skewPct}%`, s: `given to ${skewSex}` },
-  { k: 'Median age today', v: `~${payload.medianAgeToday}`, s: `median birth year ${payload.medianBirthYear}` },
+  { k: 'Median birth year', v: String(payload.medianBirthYear), s: 'half born before this year' },
+  { k: 'All-time', v: compact(payload.totalBirths), s: `babies since ${payload.startYear}` },
 ];
 ---
 <div class="stats">

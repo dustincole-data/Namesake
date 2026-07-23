@@ -4,8 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { downloadSSA } from './download.ts';
 import { parseYobFile } from './parse.ts';
 import { indexRecords, shareCurve, normalizeCurve, peakYearOf, medianBirthYear, skewOf } from './stats.ts';
-import { computeRanks, peakRankOf } from './rank.ts';
+import { computeRanks, peakRankOf, rankNamesForYear } from './rank.ts';
 import { classifyTrajectory, eraCaption } from './caption.ts';
+import { classifyArchetype } from './archetype.ts';
 import { shapeVector, topTwins } from './twins.ts';
 import { ghosts, comebacks, unisex, nameOfYear, type NameStat } from './explore.ts';
 import { writeArtifacts } from './shard.ts';
@@ -15,7 +16,6 @@ import { START_YEAR, END_YEAR, type NamePayload, type RawRecord, type TwinData, 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const TWIN_THRESHOLD = 60_000;   // all-time total to be a twin candidate (~2–3k names); tune after first run
 const TOP_N = 5_000;             // names prerendered as pages (Task 11)
-const CURRENT_YEAR = new Date().getFullYear();
 
 function downsample(curve: number[], n: number): number[] {
   const out: number[] = [];
@@ -73,11 +73,14 @@ async function main() {
           name: nameBySlug.get(t.slug)!, slug: t.slug, spark: downsample(curveBySlug.get(t.slug)!, 40),
         }))
       : [];
+    const peakCount = (s.agg.bySexYear.M.get(s.peakYear) ?? 0) + (s.agg.bySexYear.F.get(s.peakYear) ?? 0);
     return {
       name: s.name, slug: s.slug, dominantSex: s.dominantSex, startYear: START_YEAR,
-      curve: s.curve, peakYear: s.peakYear, peakRank: s.peakRank, skewPct: s.skewPct,
+      curve: s.curve, peakYear: s.peakYear, peakRank: s.peakRank,
+      peakCount, maxShare: s.peakShare, skewPct: s.skewPct,
       totalBirths: s.agg.totalBySex.M + s.agg.totalBySex.F,
-      medianBirthYear: s.median, medianAgeToday: CURRENT_YEAR - s.median,
+      medianBirthYear: s.median,
+      archetype: classifyArchetype(s.shares, s.peakYear),
       caption: eraCaption(s.peakYear, classifyTrajectory(s.shares, s.peakYear)),
       twins,
     };
@@ -96,7 +99,12 @@ async function main() {
 
   const topSlugs = [...payloads].sort((a, b) => b.totalBirths - a.totalBirths).slice(0, TOP_N).map(p => p.slug);
 
-  await writeArtifacts(join(ROOT, 'public', 'data'), payloads, explore, topSlugs);
+  // globals for the reveal: per-year total births (reconstructs any name's per-year
+  // count client-side) and END_YEAR rank->name (modern rank-equivalent).
+  const births = Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => totalBirthsByYear.get(START_YEAR + i) ?? 0);
+  const equiv = rankNamesForYear(records, END_YEAR);
+
+  await writeArtifacts(join(ROOT, 'public', 'data'), payloads, explore, topSlugs, births, equiv);
   console.log(`wrote ${payloads.length} names, ${topSlugs.length} top slugs`);
 }
 main().catch(e => { console.error(e); process.exit(1); });

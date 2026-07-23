@@ -4,22 +4,24 @@ import SearchBox from '../components/SearchBox.astro';
 import ExplorePanel from '../components/ExplorePanel.astro';
 import BirthYearPanel from '../components/BirthYearPanel.astro';
 import { readExplore } from '../lib/data.ts';
+import { START_YEAR, END_YEAR } from '../lib/types.ts';
 const ex = await readExplore();
+const span = END_YEAR - START_YEAR + 1;
 const og = `${Astro.site}${import.meta.env.BASE_URL.replace(/^\//, '')}og/_default.png`.replace(/([^:]\/)\/+/g, '$1');
 ---
 <html lang="en"><head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Namesake — a map of American names</title>
-  <meta name="description" content="Type your name and watch its 145-year life story unfold. A map of American first names, 1880–2024." />
+  <meta name="description" content={`Type your name and watch its ${span}-year life story unfold. A map of American first names, ${START_YEAR}–${END_YEAR}.`} />
   <meta property="og:title" content="Namesake — a map of American names" />
   <meta property="og:image" content={og} />
   <meta name="twitter:card" content="summary_large_image" />
 </head>
 <body><main class="wrap">
   <header class="hero">
-    <div class="kick">Namesake · U.S. Social Security · 1880–2024</div>
+    <div class="kick">Namesake · U.S. Social Security · {START_YEAR}–{END_YEAR}</div>
     <h1>What does a name's life look like?</h1>
-    <p>Type your name. Watch 145 years of American births rise, crest, and fall.</p>
+    <p>Type your name. Watch {span} years of American births rise, crest, and fall.</p>
     <SearchBox autofocus={true} />
   </header>
 

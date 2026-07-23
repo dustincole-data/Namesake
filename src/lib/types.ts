@@ -1,6 +1,6 @@
 export type Sex = 'M' | 'F';
 export const START_YEAR = 1880;
-export const END_YEAR = 2024;
+export const END_YEAR = 2025;
 
 export interface RawRecord { name: string; sex: Sex; year: number; count: number; }
 
@@ -21,13 +21,18 @@ export interface NamePayload {
   curve: number[];        // per-year share normalized to own max, ints 0..1000, length END-START+1
   peakYear: number;
   peakRank: number;       // best (min) yearly rank within dominant sex
+  peakCount: number;      // exact U.S. births (M+F) in peakYear — the raw-count hero number
+  maxShare: number;       // peak share of all U.S. births (fraction); reconstructs per-year counts client-side
   skewPct: number;        // % of all-time births given to dominantSex, one decimal
   totalBirths: number;    // all-time M+F count
   medianBirthYear: number;
-  medianAgeToday: number;
+  archetype: string;      // ArchetypeKey (see src/lib/archetype.ts), computed by ordered rule
   caption: string;        // one-line era caption
   twins: TwinData[];      // up to 5
 }
+
+/** rank (1-based) -> name, for END_YEAR, per sex; top 1000 each. Powers modern rank-equivalent. */
+export interface RankEquiv { M: string[]; F: string[]; }
 
 export interface ExploreItem { name: string; slug: string; spark: number[]; blurb: string; }
 export interface ExploreData {

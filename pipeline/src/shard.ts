@@ -1,6 +1,6 @@
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { NamePayload, ExploreData } from '../../src/lib/types.ts';
+import type { NamePayload, ExploreData, RankEquiv } from '../../src/lib/types.ts';
 import { shardKey } from '../../src/lib/format.ts';
 
 export async function writeArtifacts(
@@ -8,6 +8,8 @@ export async function writeArtifacts(
   payloads: NamePayload[],
   explore: ExploreData,
   topSlugs: string[],
+  births: number[],
+  equiv: RankEquiv,
 ): Promise<void> {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(join(outDir, 'names'), { recursive: true });
@@ -31,4 +33,6 @@ export async function writeArtifacts(
 
   await writeFile(join(outDir, 'explore.json'), JSON.stringify(explore));
   await writeFile(join(outDir, 'top.json'), JSON.stringify(topSlugs));
+  await writeFile(join(outDir, 'births.json'), JSON.stringify(births));   // per-year total U.S. births
+  await writeFile(join(outDir, 'equiv.json'), JSON.stringify(equiv));     // END_YEAR rank -> name, per sex
 }

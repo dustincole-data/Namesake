@@ -8,7 +8,7 @@ const SSA_URL = 'https://www.ssa.gov/oact/babynames/names.zip';
 export async function downloadSSA(destDir: string): Promise<string[]> {
   await mkdir(destDir, { recursive: true });
   const existing = (await readdir(destDir)).filter(f => /^yob\d{4}\.txt$/.test(f));
-  if (existing.length >= 145) return existing.sort().map(f => join(destDir, f));
+  if (existing.length >= 146) return existing.sort().map(f => join(destDir, f));
 
   const require = createRequire(import.meta.url);
   const AdmZip = require('adm-zip');

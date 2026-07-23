@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 import satori from 'satori';
 import { Resvg } from '@resvg/resvg-js';
 import { readTopSlugs, readPayload } from '../src/lib/data.ts';
-import { buildLinePath } from '../src/lib/chart.ts';
+import { archetypeOf } from '../src/lib/archetype.ts';
+import { cardTree, type CardOpts } from './card.ts';
 import type { NamePayload } from '../src/lib/types.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -16,29 +17,16 @@ const W = 1200, H = 630;
 // wght=400 — satori's opentype.js parser can't read the variable fvar table).
 const font = await readFile(join(ROOT, 'scripts', 'assets', 'display.ttf'));
 
-function card(p: NamePayload) {
-  const { line } = buildLinePath(p.curve, 1080, 240, 6);
+function optsFor(p: NamePayload): CardOpts {
   return {
-    type: 'div',
-    props: {
-      style: { width: W, height: H, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-        padding: 64, background: '#e7e2d3', color: '#23201b', fontFamily: 'Gelasio' },
-      children: [
-        { type: 'div', props: { style: { fontSize: 22, letterSpacing: 4, textTransform: 'uppercase', color: '#21456e' }, children: 'U.S. Social Security · 1880–2024' } },
-        { type: 'div', props: { style: { display: 'flex', flexDirection: 'column' }, children: [
-          { type: 'div', props: { style: { fontSize: 128, lineHeight: 1 }, children: p.name } },
-          { type: 'div', props: { style: { fontSize: 30, fontStyle: 'italic', color: '#6b6252', marginTop: 12 }, children: p.caption } },
-        ] } },
-        { type: 'svg', props: { width: 1080, height: 120, viewBox: '0 0 1080 240', children: [
-          { type: 'path', props: { d: line, fill: 'none', stroke: '#21456e', strokeWidth: 5 } },
-        ] } },
-      ],
-    },
+    name: p.name, caption: p.caption, startYear: p.startYear,
+    endYear: p.startYear + p.curve.length - 1, curve: p.curve,
+    peakYear: p.peakYear, peakCount: p.peakCount, archetypeLabel: archetypeOf(p.archetype).label,
   };
 }
 
 async function render(p: NamePayload, slug: string) {
-  const svg = await satori(card(p) as any, { width: W, height: H, fonts: [{ name: 'Gelasio', data: font, weight: 400, style: 'normal' }] });
+  const svg = await satori(cardTree(optsFor(p)) as any, { width: W, height: H, fonts: [{ name: 'Gelasio', data: font, weight: 400, style: 'normal' }] });
   // loadSystemFonts:false is critical — satori vectorizes text to <path>, so there is
   // no <text> for resvg to shape; without this, resvg scans the Windows font DB (~2s/img).
   const png = new Resvg(svg, { font: { loadSystemFonts: false } }).render().asPng();
@@ -57,7 +45,10 @@ async function main() {
   }
   // default card
   const first = await readPayload(slugs[0]);
-  if (first) await render({ ...first, name: 'Namesake', caption: 'A map of American names, 1880–2024.' }, '_default');
+  if (first) {
+    const end = first.startYear + first.curve.length - 1;
+    await render({ ...first, name: 'Namesake', caption: `A map of American names, ${first.startYear}–${end}.` }, '_default');
+  }
   console.log(`wrote ${done + 1} og images`);
 }
 main().catch(e => { console.error(e); process.exit(1); });

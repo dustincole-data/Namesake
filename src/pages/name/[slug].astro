@@ -1,19 +1,23 @@
 ---
 import '../../styles/global.css';
 import NameStory from '../../components/NameStory.astro';
-import { readTopSlugs, readPayload } from '../../lib/data.ts';
+import { readTopSlugs, readPayload, readBirths, readEquiv } from '../../lib/data.ts';
+import { rankEquivName } from '../../lib/reveal.ts';
 import type { NamePayload } from '../../lib/types.ts';
 
 export async function getStaticPaths() {
-  const slugs = await readTopSlugs();
+  const [slugs, births, equiv] = await Promise.all([readTopSlugs(), readBirths(), readEquiv()]);
   const paths = [];
   for (const slug of slugs) {
     const payload = await readPayload(slug);
-    if (payload) paths.push({ params: { slug }, props: { payload } });
+    if (payload) {
+      const equivName = rankEquivName(equiv, payload.dominantSex, payload.peakRank);
+      paths.push({ params: { slug }, props: { payload, births, equivName } });
+    }
   }
   return paths;
 }
-const { payload } = Astro.props as { payload: NamePayload };
+const { payload, births, equivName } = Astro.props as { payload: NamePayload; births: number[]; equivName: string | null };
 const title = `${payload.name} — a name's life story | Namesake`;
 const base = import.meta.env.BASE_URL;
 const ogPath = `${Astro.site}${base.replace(/^\//, '')}og/${payload.slug}.png`.replace(/([^:]\/)\/+/g, '$1');
@@ -26,4 +30,4 @@ const ogPath = `${Astro.site}${base.replace(/^\//, '')}og/${payload.slug}.png`.r
   <meta property="og:description" content={payload.caption} />
   <meta property="og:image" content={ogPath} />
   <meta name="twitter:card" content="summary_large_image" />
-</head><body><main><NameStory payload={payload} /></main></body></html>
+</head><body><main><NameStory payload={payload} births={births} equivName={equivName} /></main></body></html>

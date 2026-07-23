@@ -2,7 +2,7 @@
 
 A free, static "map of American names." Type any name → its ~145-year life story
 (rise, peak, fall) as a Vital-Records-style SVG chart, plus a trends explorer.
-Data: SSA national baby names, 1880–2024. The flagship data toy for dustincoledata.
+Data: SSA national baby names, 1880–2025. The flagship data toy for dustincoledata.
 
 Lives at **namesake.dustincoledata.com** (its own standalone Vercel project — fully
 decoupled from the main dustincoledata site, not proxied through it).
@@ -31,7 +31,10 @@ satori + @resvg/resvg-js for build-time share cards. No in-browser model; ~1s lo
 ## Deploy (standalone Vercel project)
 
 Namesake is its own Vercel project served at its own subdomain — no rewrite/proxy on
-the main site. It is 100% static, so it uses ~zero runtime (fluid) compute.
+the main site. It is static except for **one edge function** (`api/og.ts`, `@vercel/og`)
+that renders the personalized name+year share cards on demand — so runtime compute is
+near-zero and only touched when someone shares a card. The canonical `/name/<slug>`
+page unfurls the static build-time card in `public/og/`.
 
 **1. Namesake Vercel project**
 - Push this repo to GitHub; import as a **new** Vercel project.
@@ -52,6 +55,9 @@ the main site. It is 100% static, so it uses ~zero runtime (fluid) compute.
 - `/name/<a-rare-real-name>` (long-tail fallback via the `vercel.json` rewrite → `lookup`)
 - `/name/zzzznotaname` ("No record found")
 - OG: `/og/dustin.png` resolves; paste a name link into a social-card debugger.
+- Reveal: on a name page, enter a birth year → badge + count + chart marker appear.
+- Personalized card: `/api/og?slug=dustin&year=1990` renders a PNG (edge function).
+- Redirect: bare `/name` → `/`.
 
 ## Yearly refresh
 When SSA publishes a new year (and after bumping `END_YEAR` in `src/lib/types.ts` if

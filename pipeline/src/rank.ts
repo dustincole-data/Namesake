@@ -27,3 +27,16 @@ export function peakRankOf(name: string, sex: Sex, ranks: Map<string, Map<number
   if (!m) return Infinity;
   return Math.min(...m.values());
 }
+
+/**
+ * rank (1-based) -> name for a single year, per sex, top k. Same tie-break as
+ * computeRanks (count desc, then name asc) so equiv[peakRank-1] aligns with the
+ * rank a name earned. Powers the modern rank-equivalent lookup.
+ */
+export function rankNamesForYear(records: RawRecord[], year: number, k = 1000): { M: string[]; F: string[] } {
+  const bySex: Record<Sex, { name: string; count: number }[]> = { M: [], F: [] };
+  for (const r of records) if (r.year === year) bySex[r.sex].push({ name: r.name, count: r.count });
+  const top = (arr: { name: string; count: number }[]) =>
+    arr.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)).slice(0, k).map(e => e.name);
+  return { M: top(bySex.M), F: top(bySex.F) };
+}

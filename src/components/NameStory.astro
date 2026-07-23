@@ -3,20 +3,30 @@ import type { NamePayload } from '../lib/types.ts';
 import PopularityChart from './PopularityChart.astro';
 import StatTiles from './StatTiles.astro';
 import TwinChips from './TwinChips.astro';
+import BirthYearReveal from './BirthYearReveal.astro';
+import Methodology from './Methodology.astro';
 import SearchBox from './SearchBox.astro';
-const { payload } = Astro.props as { payload: NamePayload };
+import { archetypeOf } from '../lib/archetype.ts';
+const { payload, births, equivName } = Astro.props as { payload: NamePayload; births: number[]; equivName: string | null };
 const n = payload.curve.length;
+const endYear = payload.startYear + n - 1;
+const gap = endYear - payload.peakYear;
+const gapText = gap <= 0 ? 'this year' : `${gap} year${gap === 1 ? '' : 's'} ago`;
+const arch = archetypeOf(payload.archetype);
 ---
 <section class="story">
   <div class="wrap">
-    <div class="eyebrow">U.S. Social Security · {payload.startYear}–{payload.startYear + n - 1}</div>
+    <div class="eyebrow">U.S. Social Security · {payload.startYear}–{endYear}</div>
     <h1 class="name">{payload.name}</h1>
+    <div class="stamp">{arch.label}</div>
+    <p class="peakgap">Peaked in <b>{payload.peakYear}</b>, {gapText} — when <b>{payload.peakCount.toLocaleString('en-US')}</b> U.S. babies got the name.</p>
     <p class="caption">{payload.caption}</p>
-    <div class="stamp">Peaked {payload.peakYear}</div>
 
     <PopularityChart payload={payload} />
-    <StatTiles payload={payload} />
+    <BirthYearReveal payload={payload} births={births} />
+    <StatTiles payload={payload} equivName={equivName} />
     <TwinChips twins={payload.twins} />
+    <Methodology payload={payload} />
 
     <div class="searchrow"><SearchBox /><span class="hint">try any name →</span></div>
   </div>
