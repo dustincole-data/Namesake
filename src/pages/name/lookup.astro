@@ -4,13 +4,13 @@ import SearchBox from '../../components/SearchBox.astro';
 ---
 <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Namesake</title><meta property="og:image" content="/projects/namesake/og/_default.png" /></head>
-<body><main class="wrap">
+<body><main>
   <section id="story" hidden></section>
-  <section id="miss" hidden>
+  <section id="miss" class="wrap" hidden>
     <div class="eyebrow" style="color:var(--accent);font:600 12px/1 var(--mono);letter-spacing:.24em;text-transform:uppercase">No record found</div>
     <h1 style="font:400 clamp(40px,9vw,88px)/.95 var(--display);margin:14px 0">That name isn’t in the record.</h1>
     <p style="color:var(--ink-soft)">The U.S. only publishes names given to at least 5 babies in a year. Try another:</p>
-    <SearchBox autofocus={true} />
   </section>
+  <div class="wrap searchrow"><SearchBox /><span class="hint">try any name →</span></div>
   <script src="../../scripts/lookup.ts"></script>
 </main></body></html>
