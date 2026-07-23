@@ -3,6 +3,11 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/og.ts": {
+      "includeFiles": "{scripts/card.ts,src/lib/archetype.ts,src/lib/reveal.ts,src/lib/format.ts,src/lib/chart.ts}"
+    }
+  },
   "redirects": [
     { "source": "/name", "destination": "/", "permanent": false }
   ],
