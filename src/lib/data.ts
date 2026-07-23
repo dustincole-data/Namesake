@@ -1,10 +1,13 @@
 import { readFile } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import type { NamePayload, ExploreData } from './types.ts';
 import { shardKey } from './format.ts';
 
-const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'public', 'data');
+// Resolved from process.cwd() (project root, per npm script invocation) rather than
+// import.meta.url: the bundler collapses nested pages (e.g. pages/name/[slug].astro)
+// into build output at a different directory depth than pages/index.astro, which
+// broke a relative ../../ walk-up from the compiled chunk's own location.
+const DATA = join(process.cwd(), 'public', 'data');
 
 export async function readTopSlugs(): Promise<string[]> {
   return JSON.parse(await readFile(join(DATA, 'top.json'), 'utf8'));

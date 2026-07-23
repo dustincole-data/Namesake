@@ -1,0 +1,28 @@
+---
+import '../../styles/global.css';
+import NameStory from '../../components/NameStory.astro';
+import { readTopSlugs, readPayload } from '../../lib/data.ts';
+import type { NamePayload } from '../../lib/types.ts';
+
+export async function getStaticPaths() {
+  const slugs = await readTopSlugs();
+  const paths = [];
+  for (const slug of slugs) {
+    const payload = await readPayload(slug);
+    if (payload) paths.push({ params: { slug }, props: { payload } });
+  }
+  return paths;
+}
+const { payload } = Astro.props as { payload: NamePayload };
+const title = `${payload.name} — a name's life story | Namesake`;
+const ogPath = `${Astro.site}projects/namesake/og/${payload.slug}.png`.replace(/([^:]\/)\/+/g, '$1');
+---
+<html lang="en"><head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={payload.caption} />
+  <meta property="og:title" content={`${payload.name} — a name's life story`} />
+  <meta property="og:description" content={payload.caption} />
+  <meta property="og:image" content={ogPath} />
+  <meta name="twitter:card" content="summary_large_image" />
+</head><body><main><NameStory payload={payload} /></main></body></html>

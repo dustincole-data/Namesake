@@ -24,13 +24,4 @@ const label = `Popularity of the name ${payload.name} from ${payload.startYear} 
 </div>
 <div class="axis"><span>{payload.startYear}</span><span>1920</span><span>1960</span><span>2000</span><span>{payload.startYear + n - 1}</span></div>
 
-<style>
-  .chartwrap { margin: 30px 0 34px; position: relative; }
-  .chartwrap svg { width: 100%; height: auto; display: block; overflow: visible; }
-  .peaklabel { position: absolute; transform: translate(-50%, -100%); opacity: 0;
-    font: 600 12px/1.3 var(--mono); color: var(--ink); text-align: center; pointer-events: none; white-space: nowrap; }
-  .peaklabel b { display: block; font-size: 15px; }
-  .axis { display: flex; justify-content: space-between; margin-top: 8px;
-    font: 500 11px/1 var(--mono); letter-spacing: .06em; color: var(--ink-soft); }
-</style>
 <script src="../scripts/chart-draw.ts"></script>

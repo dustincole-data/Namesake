@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/projects/namesake/name/:slug", "destination": "/projects/namesake/name/lookup/index.html" }
+  ]
+}
