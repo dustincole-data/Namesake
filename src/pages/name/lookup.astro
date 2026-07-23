@@ -3,7 +3,7 @@ import '../../styles/global.css';
 import SearchBox from '../../components/SearchBox.astro';
 ---
 <html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Namesake</title><meta property="og:image" content="/projects/namesake/og/_default.png" /></head>
+  <title>Namesake</title><meta property="og:image" content={`${Astro.site}projects/namesake/og/_default.png`.replace(/([^:]\/)\/+/g, '$1')} /></head>
 <body><main>
   <section id="story" hidden></section>
   <section id="miss" class="wrap" hidden>

@@ -11,7 +11,7 @@ const ex = await readExplore();
   <title>Namesake — a map of American names</title>
   <meta name="description" content="Type your name and watch its 145-year life story unfold. A map of American first names, 1880–2024." />
   <meta property="og:title" content="Namesake — a map of American names" />
-  <meta property="og:image" content="/projects/namesake/og/_default.png" />
+  <meta property="og:image" content={`${Astro.site}projects/namesake/og/_default.png`.replace(/([^:]\/)\/+/g, '$1')} />
   <meta name="twitter:card" content="summary_large_image" />
 </head>
 <body><main class="wrap">

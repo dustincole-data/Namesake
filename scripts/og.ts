@@ -9,7 +9,6 @@ import type { NamePayload } from '../src/lib/types.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'og');
-const OG_N = 2_000;
 const W = 1200, H = 630;
 
 // System serif isn't available to satori; ship one local ttf for the display font
@@ -48,7 +47,9 @@ async function render(p: NamePayload, slug: string) {
 
 async function main() {
   await mkdir(OUT, { recursive: true });
-  const slugs = (await readTopSlugs()).slice(0, OG_N);
+  // One card per prerendered name (top.json == build.ts TOP_N) so no prerendered
+  // page ever ships an og:image that 404s. Kept in lockstep by construction.
+  const slugs = await readTopSlugs();
   let done = 0;
   for (const slug of slugs) {
     const p = await readPayload(slug);
