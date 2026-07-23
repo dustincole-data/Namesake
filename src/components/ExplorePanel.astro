@@ -1,0 +1,27 @@
+---
+import type { ExploreItem } from '../lib/types.ts';
+import { buildSparkPath } from '../lib/chart.ts';
+const { title, blurb, items } = Astro.props as { title: string; blurb: string; items: ExploreItem[] };
+const base = import.meta.env.BASE_URL;
+---
+<section class="panel">
+  <h2>{title}</h2>
+  <p class="blurb">{blurb}</p>
+  <div class="chips">
+    {items.slice(0, 6).map(it => (
+      <a class="chip" href={`${base}/name/${it.slug}`}>
+        <svg viewBox="0 0 46 18" aria-hidden="true"><path d={buildSparkPath(it.spark, 46, 18)}
+          fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-opacity=".85"
+          stroke-linecap="round" stroke-linejoin="round" /></svg>
+        <span>{it.name}</span>
+      </a>
+    ))}
+  </div>
+</section>
+<style>
+  /* .chip / .chips are defined globally in styles/story.css (shared with TwinChips) —
+     reused as-is here so landing panel chips match the name-page twin chips exactly. */
+  .panel { padding: 26px; border: 1px solid var(--rule); border-radius: 16px; background: var(--panel); }
+  .panel h2 { margin: 0 0 6px; font: 400 clamp(22px,3vw,30px)/1 var(--display); color: var(--ink); }
+  .blurb { margin: 0 0 18px; max-width: 42ch; color: var(--ink-soft); font: 400 14.5px/1.5 system-ui, sans-serif; }
+</style>
