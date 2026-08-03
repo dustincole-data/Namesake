@@ -1,0 +1,109 @@
+---
+/**
+ * The field: every name at once, as the front door.
+ *
+ * Ghosts / comebacks / the unisex line used to be three panels of six chips each. They are
+ * selections over this same set of names, so they light in place here instead — same
+ * mechanism as hovering, applied to a set. Nothing is lost: every chip's destination is
+ * still one click away, and the reader now sees where those names sit relative to all the
+ * others, which a list of six could never show.
+ */
+import type { ExploreData } from '../lib/types.ts';
+const { explore } = Astro.props as { explore: ExploreData };
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const modes = [
+  { key: 'ghosts', label: 'Ghosts', blurb: 'Giants of their day, all but gone now.', items: explore.ghosts },
+  { key: 'comebacks', label: 'Comebacks', blurb: 'Names roaring back after decades away.', items: explore.comebacks },
+  { key: 'unisex', label: 'The unisex line', blurb: 'Names shared across the gender divide.', items: explore.unisex },
+];
+---
+<section class="foam" data-foam data-base={base}>
+  <div class="stage">
+    <canvas width="1400" height="900" role="img"
+      aria-label="Every American given name that ever reached 0.04% of a year's births, 1,572 of them, drawn as one bubble each, sized by the largest share of a year's births it ever took and placed left to right by the year it crested."></canvas>
+
+    <div class="ui">
+      <div class="head">
+        <h1>The big names got <em>small</em>.</h1>
+        <p class="deck">One bubble per name, sized by the largest share of a year's American
+          births it ever took. Packed left to right by the year it crested.</p>
+      </div>
+
+      <div class="search">
+        <input type="text" data-foam-search placeholder="Type your name…" autocomplete="off"
+          spellcheck="false" aria-label="Find a name in the field" />
+      </div>
+
+      <div class="claim">
+        <div class="big n1">4.81%</div>
+        <p class="cap">of every American baby born in 1880 was named <b>John</b>. One in twenty-one.</p>
+        <div class="big n2">0.67%</div>
+        <p class="cap">is the biggest any name has managed since 2010 — <b>Liam</b>, 2024.
+          Seven times smaller. Same country, seven times less agreement about what to call a child.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modes">
+    {modes.map(m => (
+      <button type="button" data-mode={m.key} aria-pressed="false"
+        data-slugs={m.items.map(i => i.slug).join(',')}>
+        <span class="lbl">{m.label}</span>
+        <span class="blurb">{m.blurb}</span>
+      </button>
+    ))}
+  </div>
+</section>
+
+<style>
+  .foam { margin: 0 0 46px; }
+  .stage { position: relative; width: 100%; aspect-ratio: 1400 / 900; }
+  .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ui { position: absolute; inset: 0; pointer-events: none;
+        container-type: inline-size; font-size: clamp(9px, 1.0vw, 14px); }
+
+  /* the overlay is sized in cqw so the type tracks the canvas at every width */
+  .head { position: absolute; left: 5.14cqw; top: 6.2cqw; }
+  .head h1 { margin: 0; max-width: 16ch; text-wrap: balance;
+    font: 700 3.07cqw/1.03 var(--display); letter-spacing: -.03em; color: var(--ink); }
+  .head h1 em { font-style: normal; color: var(--accent); }
+  .deck { margin: 1cqw 0 0; max-width: 40ch; color: var(--ink-soft);
+    font: 300 1.07cqw/1.5 var(--display); }
+
+  .search { position: absolute; left: 42.9cqw; top: 6.4cqw; pointer-events: auto; }
+  .search input { width: 24.4cqw; padding: .93cqw 1.29cqw; border: .14cqw solid var(--ink);
+    border-radius: 999px; background: var(--panel); color: var(--ink);
+    font: 300 1.07cqw/1 var(--display); outline: none; }
+  .search input::placeholder { color: var(--ink-mute); }
+  .search input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .claim { position: absolute; right: 5.14cqw; top: 5.8cqw; width: 20.4cqw; text-align: right; }
+  .claim .big { font: 700 3.7cqw/1 var(--display); letter-spacing: -.035em; }
+  .claim .n1 { color: var(--accent); }
+  .claim .n2 { color: var(--stamp); }
+  .claim .cap { margin: .5cqw 0 1.6cqw; color: var(--ink-soft); font: 300 .9cqw/1.45 var(--display); }
+  .claim .cap b { color: var(--ink); font-weight: 500; }
+  .claim .cap:last-child { margin-bottom: 0; }
+
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .modes button { text-align: left; padding: 18px 20px; border: 1px solid var(--rule);
+    border-radius: 14px; background: var(--panel); cursor: pointer; color: inherit; }
+  .modes button:hover { border-color: var(--ink-mute); }
+  .modes button[aria-pressed='true'] { border-color: var(--ink); background: var(--ground); }
+  .modes .lbl { display: block; font: 500 18px/1.2 var(--display); color: var(--ink); }
+  .modes .blurb { display: block; margin-top: 5px; font: 400 13px/1.45 var(--mono); color: var(--ink-soft); }
+
+  @media (max-width: 720px) {
+    /* the field needs width to be a field; below tablet it scrolls sideways rather than
+       shrinking every mark past legibility */
+    .stage { width: 980px; }
+    .foam { overflow-x: auto; }
+    .modes { margin-top: 18px; }
+  }
+</style>
+
+<script>
+  import { mountFoam } from '../scripts/foam.ts';
+  const root = document.querySelector<HTMLElement>('[data-foam]');
+  if (root) mountFoam(root);
+</script>

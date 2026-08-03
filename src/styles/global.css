@@ -4,6 +4,11 @@
 body {
   margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
   background: var(--ground); color: var(--ink);
-  background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(33,69,110,.05) 27px, rgba(33,69,110,.05) 28px);
+  /* The base face is declared here so nothing can fall through to the browser default,
+     which is a serif — the old skin left every font to the component and any element that
+     forgot rendered in Times. The ruled-paper gradient that used to live here went with
+     the almanac skin: this ground carries a field running seven hues at once, and one
+     constant unsaturated ground is what lets those hues read against it. */
+  font-family: var(--display);
 }
 .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(20px, 5vw, 64px); }

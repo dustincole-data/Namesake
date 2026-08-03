@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
-import SearchBox from '../components/SearchBox.astro';
-import ExplorePanel from '../components/ExplorePanel.astro';
+import Foam from '../components/Foam.astro';
 import BirthYearPanel from '../components/BirthYearPanel.astro';
 import { readExplore } from '../lib/data.ts';
 import { START_YEAR, END_YEAR } from '../lib/types.ts';
@@ -18,26 +17,10 @@ const og = `${Astro.site}${import.meta.env.BASE_URL.replace(/^\//, '')}og/_defau
   <meta name="twitter:card" content="summary_large_image" />
 </head>
 <body><main class="wrap">
-  <header class="hero">
-    <div class="kick">Namesake · U.S. Social Security · {START_YEAR}–{END_YEAR}</div>
-    <h1>What does a name's life look like?</h1>
-    <p>Type your name. Watch {span} years of American births rise, crest, and fall.</p>
-    <SearchBox autofocus={true} />
-  </header>
-
-  <div class="grid">
-    <ExplorePanel title="Ghosts" blurb="Giants of their day, all but gone now." items={ex.ghosts} />
-    <ExplorePanel title="Comebacks" blurb="Names roaring back after decades away." items={ex.comebacks} />
-    <ExplorePanel title="The unisex line" blurb="Names shared across the gender divide." items={ex.unisex} />
-  </div>
-
+  <Foam explore={ex} />
   <BirthYearPanel nameOfYear={ex.nameOfYear} />
 </main></body></html>
 
 <style>
-  .hero { padding: clamp(30px,7vw,80px) 0 44px; }
-  .kick { font: 600 12px/1 var(--mono); letter-spacing: .26em; text-transform: uppercase; color: var(--accent); }
-  .hero h1 { margin: 16px 0 10px; font: 400 clamp(40px,8vw,84px)/.98 var(--display); letter-spacing: -.01em; color: var(--ink); text-wrap: balance; }
-  .hero p { margin: 0 0 26px; max-width: 46ch; color: var(--ink-soft); font: 400 clamp(16px,2vw,19px)/1.5 var(--display); font-style: italic; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; padding-bottom: 80px; }
+  .wrap { padding-top: 22px; }
 </style>

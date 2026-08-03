@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { downloadSSA } from './download.ts';
@@ -9,6 +9,7 @@ import { classifyTrajectory, eraCaption } from './caption.ts';
 import { classifyArchetype } from './archetype.ts';
 import { shapeVector, topTwins } from './twins.ts';
 import { ghosts, comebacks, unisex, nameOfYear, type NameStat } from './explore.ts';
+import { buildFoam } from './foam.ts';
 import { writeArtifacts } from './shard.ts';
 import { slugify } from '../../src/lib/format.ts';
 import { START_YEAR, END_YEAR, type NamePayload, type RawRecord, type TwinData, type ExploreItem, type NameAgg } from '../../src/lib/types.ts';
@@ -99,12 +100,19 @@ async function main() {
 
   const topSlugs = [...payloads].sort((a, b) => b.totalBirths - a.totalBirths).slice(0, TOP_N).map(p => p.slug);
 
+  // the homepage field: one packed mark per name, solved here so the page can just draw it
+  const foam = buildFoam(stats.map(s => ({
+    name: s.name, slug: s.slug, shares: s.shares, peakYear: s.peakYear, peakShare: s.peakShare,
+  })));
+
   // globals for the reveal: per-year total births (reconstructs any name's per-year
   // count client-side) and END_YEAR rank->name (modern rank-equivalent).
   const births = Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => totalBirthsByYear.get(START_YEAR + i) ?? 0);
   const equiv = rankNamesForYear(records, END_YEAR);
 
   await writeArtifacts(join(ROOT, 'public', 'data'), payloads, explore, topSlugs, births, equiv);
-  console.log(`wrote ${payloads.length} names, ${topSlugs.length} top slugs`);
+  // after writeArtifacts, which clears the directory first
+  await writeFile(join(ROOT, 'public', 'data', 'foam.json'), JSON.stringify(foam));
+  console.log(`wrote ${payloads.length} names, ${topSlugs.length} top slugs, ${foam.marks.length} foam marks (k=${foam.k})`);
 }
 main().catch(e => { console.error(e); process.exit(1); });

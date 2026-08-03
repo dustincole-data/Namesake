@@ -1,11 +1,36 @@
+/* Namesake's visual language.
+ *
+ * Replaces the original cream-and-Georgia almanac skin. The ground is a near-white with a
+ * trace of blue rather than the warm cream it used to be: the field runs more simultaneous
+ * hues than anything else on the site, and one constant unsaturated ground is what lets
+ * those hues be read against the ground instead of against each other. A cream ground sits
+ * too close to the palette's warm end and the reds stop separating from it.
+ *
+ * Two faces, two jobs: a geometric sans for display and data, a condensed grotesque for
+ * apparatus — axis labels, keys, eyebrows — set in letterspaced caps so furniture reads as
+ * furniture. No serif anywhere.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700&family=Archivo+Narrow:wght@400;500;600&display=swap');
+
 :root {
-  --ground:  #e7e2d3;
-  --panel:   #f0ebdf;
-  --ink:     #23201b;
-  --ink-soft:#6b6252;
-  --rule:    #cfc7b3;
-  --accent:  #21456e;
-  --stamp:   #9e3b2c;
-  --display: Georgia,'Palatino Linotype','Iowan Old Style',serif;
-  --mono: ui-monospace,'Cascadia Code','Consolas',monospace;
+  --ground:  #f9fbfe;
+  --panel:   #ffffff;
+  --ink:     #1d2430;
+  --ink-soft:#5b6472;
+  --ink-mute:#98a1ae;
+  --rule:    #dfe4ec;
+  --accent:  #d2503a;   /* the field's warm end — the A–B block */
+  --stamp:   #b0407a;   /* the field's cool end — the T–Z block */
+
+  --display: Outfit, system-ui, -apple-system, sans-serif;
+  --mono: 'Archivo Narrow', system-ui, sans-serif;
+
+  /* the field's closed palette, by the letter a name starts with */
+  --hue-ab: #cf5545;
+  --hue-cd: #d68f21;
+  --hue-ei: #7ba62f;
+  --hue-jk: #17a07e;
+  --hue-lm: #1f8fbf;
+  --hue-ns: #7a5fd0;
+  --hue-tz: #c44b8c;
 }
