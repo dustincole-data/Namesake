@@ -1,6 +1,7 @@
 ---
 import '../../styles/global.css';
 import NameStory from '../../components/NameStory.astro';
+import DcdMark from '../../components/DcdMark.astro';
 import { readTopSlugs, readPayload, readBirths, readEquiv } from '../../lib/data.ts';
 import { rankEquivName } from '../../lib/reveal.ts';
 import type { NamePayload } from '../../lib/types.ts';
@@ -30,4 +31,4 @@ const ogPath = `${Astro.site}${base.replace(/^\//, '')}og/${payload.slug}.png`.r
   <meta property="og:description" content={payload.caption} />
   <meta property="og:image" content={ogPath} />
   <meta name="twitter:card" content="summary_large_image" />
-</head><body><main><NameStory payload={payload} births={births} equivName={equivName} /></main></body></html>
+</head><body><main><NameStory payload={payload} births={births} equivName={equivName} /></main><DcdMark /></body></html>
