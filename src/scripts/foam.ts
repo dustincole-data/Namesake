@@ -10,6 +10,19 @@
  * would be unreadable, so that is paid for at focus: everything else drops to a ghost and
  * the chosen mark keeps full chroma and draws its own life — the share of all American
  * births it held every year since 1880.
+ *
+ * TWO PACKS, ONE FIELD. A phone is not a narrow desktop: the wide pack rendered into 390px
+ * is 3.3px a mark, which is why the page used to hide it behind a sideways scrollbar. The
+ * build solves the same 1,572 names a second time into a portrait band, and below the
+ * breakpoint the page loads that one instead — ~9px a mark, the same size the wide field
+ * has on a desktop. Everything downstream of the fetch reads its geometry off the data, so
+ * there is one drawing routine and no second implementation to drift.
+ *
+ * What changes with it is where the WORDS go. On the wide page the hero text is an overlay
+ * and the key block is drawn into the canvas; on the narrow one both are markup, because
+ * canvas-space type scales with the artwork rather than the viewport and lands off-screen
+ * (the text) or at 6.7px (the keys). The canvas keeps the field and its era axis. See
+ * Foam.astro.
  */
 import { rng, noise1, towards, css, speckle, grain, clamp, type Lch } from '../lib/draw.ts';
 import { inkGlyph, inkPath } from '../lib/letters.ts';
@@ -17,13 +30,16 @@ import { publishField, type FieldMark } from '../lib/field.ts';
 
 interface Mark { n: string; slug: string; py: number; ps: number; w: number; x: number; y: number; r: number; }
 interface Foam {
-  k: number; rMin: number; band: { x0: number; x1: number; y0: number; y1: number };
+  k: number; rMin: number; page: { w: number; h: number }; vertical: boolean;
+  band: { x0: number; x1: number; y0: number; y1: number };
   cy: number; y0: number; y1: number; yearEdge: number[]; yearH: number[]; marks: Mark[];
 }
 interface Placed { x: number; y: number; r: number; m: Mark; }
 
-const W = 1400, H = 1026, DPR = Math.min(2, window.devicePixelRatio || 1);
+const DPR = Math.min(2, window.devicePixelRatio || 1);
 const PAPER: Lch = { L: 0.988, C: 0.004, h: 250 };
+/** Below this the page takes the portrait pack. Foam.astro's breakpoint is the same number. */
+const NARROW = '(max-width: 720px)';
 
 const LETTERS: [string, string, Lch][] = [
   ['A', 'B', { L: 0.58, C: 0.155, h: 25 }],
@@ -34,10 +50,13 @@ const LETTERS: [string, string, Lch][] = [
   ['N', 'S', { L: 0.54, C: 0.155, h: 292 }],
   ['T', 'Z', { L: 0.60, C: 0.165, h: 344 }],
 ];
-const ERAS: [number, number, string][] = [
-  [1880, 1904, '1880s–1900s'], [1905, 1929, '1900s–20s'], [1930, 1949, '1930s–40s'],
-  [1950, 1969, '1950s–60s'], [1970, 1989, '1970s–80s'], [1990, 2009, '1990s–2000s'],
-  [2010, 2030, '2010s–now'],
+// the fourth field is the portrait label: the gutter is 84 units wide and a range does not
+// fit in it, so the narrow axis names each era by where it starts
+const ERAS: [number, number, string, string][] = [
+  [1880, 1904, '1880s–1900s', '1880s'], [1905, 1929, '1900s–20s', '1900s'],
+  [1930, 1949, '1930s–40s', '1930s'], [1950, 1969, '1950s–60s', '1950s'],
+  [1970, 1989, '1970s–80s', '1970s'], [1990, 2009, '1990s–2000s', '1990s'],
+  [2010, 2030, '2010s–now', '2010s'],
 ];
 const blockOf = (name: string) => {
   const c0 = name[0].toUpperCase();
@@ -50,10 +69,19 @@ const hashOf = (str: string, salt: number) => {
   return h >>> 0;
 };
 
+/** every listener this mount owns, so a breakpoint crossing can remount without doubling up */
+let live: AbortController | null = null;
+
 export async function mountFoam(root: HTMLElement) {
+  live?.abort();
+  const ac = new AbortController();
+  live = ac;
+  const { signal } = ac;
+
   const base = root.dataset.base || '';
+  const narrow = window.matchMedia(NARROW);
   const [foam] = await Promise.all([
-    fetch(`${base}/data/foam.json`).then((r) => r.json() as Promise<Foam>),
+    fetch(`${base}/data/foam${narrow.matches ? '-portrait' : ''}.json`).then((r) => r.json() as Promise<Foam>),
     // Canvas does not wait for a webfont — it silently falls back mid-draw, and the fallback
     // for an unresolved family is a serif. Every fitted label is measured against the font,
     // so resolving first is correctness, not polish. Every WEIGHT the page draws has to be
@@ -66,9 +94,26 @@ export async function mountFoam(root: HTMLElement) {
     ]),
   ]);
   await document.fonts.ready;
+  if (signal.aborted) return;
+
+  const portrait = foam.vertical;
+  const W = foam.page.w, H = foam.page.h;
+  // Apparatus type is specified at the size it should READ at, then corrected into page
+  // units: the portrait page is 560 units across ~390px of glass, so a 9.5px label drawn at
+  // face value arrives at 6.6px. One on the wide page, where the two are already the same.
+  const UIS = portrait ? 1.45 : 1;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const canvas = root.querySelector<HTMLCanvasElement>('canvas')!;
   canvas.width = W * DPR; canvas.height = H * DPR;
+  // the stage's ratio comes off the pack, so CSS and data can never disagree about it
+  const stage = canvas.parentElement as HTMLElement;
+  stage.style.aspectRatio = `${W} / ${H}`;
+  const alt = canvas.dataset.alt;
+  if (portrait && alt) canvas.setAttribute('aria-label', alt);
+  const deck = root.querySelector<HTMLElement>('.deck');
+  if (portrait && deck?.dataset.alt) deck.textContent = deck.dataset.alt;
+
   const view = canvas.getContext('2d')!;
   const buf = document.createElement('canvas');
   buf.width = W * DPR; buf.height = H * DPR;
@@ -79,16 +124,20 @@ export async function mountFoam(root: HTMLElement) {
   const MAXPS = Math.max(...placed.map((p) => p.m.ps));
   const rOf = (ps: number) => foam.rMin + foam.k * Math.sqrt(ps / MAXPS);
 
-  const xStart = (y: number) => foam.yearEdge[clamp(y - foam.y0, 0, foam.yearH.length - 1)];
-  const xEnd = (y: number) => foam.yearEdge[clamp(y - foam.y0, 0, foam.yearH.length - 1) + 1];
-  const halfAt = (px: number) => {
+  // ALONG is the time axis, ACROSS the spread — the two directions the pack was solved in.
+  // On the wide field they are the page's x and y; on the portrait one they are swapped, and
+  // this is the only place that knows it.
+  const along = (p: Placed) => (portrait ? p.y : p.x);
+  const aStart = (y: number) => foam.yearEdge[clamp(y - foam.y0, 0, foam.yearH.length - 1)];
+  const aEnd = (y: number) => foam.yearEdge[clamp(y - foam.y0, 0, foam.yearH.length - 1) + 1];
+  const halfAt = (pa: number) => {
     const E = foam.yearEdge, Hh = foam.yearH;
     let lo = 0, hi = Hh.length - 1;
-    while (lo < hi) { const mid = (lo + hi) >> 1; if (px < E[mid + 1]) hi = mid; else lo = mid + 1; }
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (pa < E[mid + 1]) hi = mid; else lo = mid + 1; }
     const a = (E[lo] + E[lo + 1]) / 2;
-    const nb = px < a ? Math.max(0, lo - 1) : Math.min(Hh.length - 1, lo + 1);
+    const nb = pa < a ? Math.max(0, lo - 1) : Math.min(Hh.length - 1, lo + 1);
     const b = (E[nb] + E[nb + 1]) / 2;
-    const t = a === b ? 0 : clamp((px - a) / (b - a), 0, 1);
+    const t = a === b ? 0 : clamp((pa - a) / (b - a), 0, 1);
     return (Hh[lo] + (Hh[nb] - Hh[lo]) * t) / 2;
   };
   const topAt = (px: number) => CY - halfAt(px);
@@ -109,6 +158,21 @@ export async function mountFoam(root: HTMLElement) {
       i ? g.lineTo(px, py) : g.moveTo(px, py);
     }
     g.closePath();
+  };
+
+  // letterspaced caps, measured and drawn — the apparatus's one type treatment, shared by
+  // the canvas key block and the markup one
+  const capsW = (str: string, font: string, ls: number) => {
+    g.font = font;
+    let w = 0;
+    for (const ch of str.toUpperCase()) w += g.measureText(ch).width + ls;
+    return w - ls;
+  };
+  const caps = (str: string, font: string, ls: number, px: number, py: number, fill: string) => {
+    g.font = font; g.fillStyle = fill;
+    let cx2 = px;
+    for (const ch of str.toUpperCase()) { g.fillText(ch, cx2, py); cx2 += g.measureText(ch).width + ls; }
+    return cx2 - ls - px;
   };
 
   /** chroma rationed by coverage: full only where a mark is big enough to carry it */
@@ -222,6 +286,11 @@ export async function mountFoam(root: HTMLElement) {
     demos: [] as { x: number; y: number; r: number }[],
   };
 
+  // Provenance is the source AND the rule that made the picture, so both travel together —
+  // drawn into the canvas on the wide page, set as markup under the narrow one.
+  const creditLine =
+    `U.S. Social Security Administration, national data · ${placed.length.toLocaleString('en-US')} names, ${foam.y0}–${foam.y1}`;
+
   function paintField() {
     g = bctx;
     bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.scale(DPR, DPR);
@@ -254,6 +323,38 @@ export async function mountFoam(root: HTMLElement) {
     }
     g.textBaseline = 'alphabetic';
 
+    const CAPS = `600 ${9.5 * UIS}px "Archivo Narrow"`, LS = 1.15 * UIS;
+    const note = (label: string, str: string, x0: number, base: number, w: number, font: string) => {
+      g.font = font;
+      const m = g.measureText(str);
+      AUDIT.type.push({ label, str, x0, x1: x0 + w, base,
+        y0: base - m.actualBoundingBoxAscent, y1: base + m.actualBoundingBoxDescent });
+    };
+
+    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+
+    if (portrait) {
+      // The narrow field has no strip under it to stand an apparatus on — the band runs the
+      // whole page. So the axis stands in the left gutter, and its labels stay HORIZONTAL: a
+      // phone must never ask anyone to read sideways. The keys went to markup (Foam.astro).
+      const RULE_X = foam.band.x0 - 13;
+      for (const [a, b, , short] of ERAS) {
+        const a0 = aStart(a), a1 = aEnd(Math.min(b, foam.y1));
+        // The axis is the one heavy stroke on a page of hairlines, and it earns the weight:
+        // the whole field stands on it, and every other line here is apparatus about it.
+        g.strokeStyle = 'rgba(93,104,122,0.72)'; g.lineWidth = 2.6; g.lineCap = 'butt';
+        g.beginPath(); g.moveTo(RULE_X, a0); g.lineTo(RULE_X, a1 - 7); g.stroke();
+        g.strokeStyle = 'rgba(120,131,146,0.34)'; g.lineWidth = 1;
+        g.beginPath(); g.moveTo(RULE_X - 5, a0); g.lineTo(RULE_X + 5, a0); g.stroke();
+        const ty = a0 + 11 * UIS;
+        const w = caps(short, CAPS, LS, 9, ty, '#5b6472');
+        note('era', short, 9, ty, w, CAPS);
+        AUDIT.keys.push({ label: short, textX: 9, w });
+      }
+      grain(bctx, W, H, 8, 5);
+      return;
+    }
+
     // --- the apparatus: one block under the field, two rows, one left edge ----------------
     // The field encodes two things the reader cannot deduce: where a year sits on a
     // non-linear axis, and what a colour means. Row one answers the first, row two the
@@ -263,27 +364,7 @@ export async function mountFoam(root: HTMLElement) {
     // draws, carrying the same hand-inked initial the marks carry — so the key is a
     // specimen of the thing it explains, and a reader who has seen a debossed M in the
     // field has already been told what blue means.
-    const CAPS = '600 9.5px "Archivo Narrow"', LS = 1.15;
-    const capsW = (str: string, font: string, ls: number) => {
-      g.font = font;
-      let w = 0;
-      for (const ch of str.toUpperCase()) w += g.measureText(ch).width + ls;
-      return w - ls;
-    };
-    const caps = (str: string, font: string, ls: number, px: number, py: number, fill: string) => {
-      g.font = font; g.fillStyle = fill;
-      let cx2 = px;
-      for (const ch of str.toUpperCase()) { g.fillText(ch, cx2, py); cx2 += g.measureText(ch).width + ls; }
-      return cx2 - ls - px;
-    };
-    const note = (label: string, str: string, x0: number, base: number, w: number, font: string) => {
-      g.font = font;
-      const m = g.measureText(str);
-      AUDIT.type.push({ label, str, x0, x1: x0 + w, base,
-        y0: base - m.actualBoundingBoxAscent, y1: base + m.actualBoundingBoxDescent });
-    };
-
-    const AX = xStart(foam.y0);                          // the apparatus shares the field's left edge
+    const AX = aStart(foam.y0);                          // the apparatus shares the field's left edge
     const eraBase = foam.band.y1 + 46;
     const eraRule = eraBase + 8;
     const KR = 17;                                       // a real mark size: above the deboss floor
@@ -295,9 +376,8 @@ export async function mountFoam(root: HTMLElement) {
     const methodBase = keyBase + 17;
     AUDIT.keyRuleY = eraRule;
 
-    g.textAlign = 'left'; g.textBaseline = 'alphabetic';
     for (const [a, b, label] of ERAS) {
-      const px0 = xStart(a), px1 = xEnd(Math.min(b, foam.y1));
+      const px0 = aStart(a), px1 = aEnd(Math.min(b, foam.y1));
       const w = caps(label, CAPS, LS, px0, eraBase, '#5b6472');
       note('era', label, px0, eraBase, w, CAPS);
       AUDIT.keys.push({ label, textX: px0, w });
@@ -388,16 +468,14 @@ export async function mountFoam(root: HTMLElement) {
     // Provenance is the source AND the rule that made the picture: what a share is measured
     // against, what got in, and what "peak" means. A credit on its own is not a method.
     const CREDIT_F = '400 10.5px "Archivo Narrow"', METHOD_F = '400 9.5px "Archivo Narrow"';
-    const credit =
-      `U.S. Social Security Administration, national data · ${placed.length.toLocaleString('en-US')} names, ${foam.y0}–${foam.y1}`;
     const method =
       "Share = a name's births in a year ÷ all American births that year. A name is drawn if it ever took " +
       '0.04% of a year; peak is its largest such share, and the arc counts the years it stayed above half of it.';
     g.font = CREDIT_F;
-    const cw = g.measureText(credit).width;
+    const cw = g.measureText(creditLine).width;
     g.fillStyle = '#8d97a5';
-    g.fillText(credit, foam.band.x1 - cw, keyBase);
-    note('credit', credit, foam.band.x1 - cw, keyBase, cw, CREDIT_F);
+    g.fillText(creditLine, foam.band.x1 - cw, keyBase);
+    note('credit', creditLine, foam.band.x1 - cw, keyBase, cw, CREDIT_F);
     AUDIT.keys.push({ label: 'credit', textX: foam.band.x1 - cw, w: cw });
     g.font = METHOD_F;
     const mw = g.measureText(method).width;
@@ -407,6 +485,63 @@ export async function mountFoam(root: HTMLElement) {
     AUDIT.keys.push({ label: 'method', textX: foam.band.x1 - mw, w: mw });
 
     grain(bctx, W, H, 8, 5);
+  }
+
+  // --- the markup key block (narrow only) ------------------------------------------------
+  // Same three channels, same specimens, drawn by the same hand into their own canvases —
+  // because a key rendered inside the portrait field would arrive at 6.7px, and a key you
+  // cannot read is not a key. Each canvas is drawn at 1:1 with CSS pixels, so these sizes
+  // are the sizes on glass.
+  function paintKeys() {
+    const host = root.querySelector<HTMLElement>('[data-foam-keys]');
+    if (!host) return;
+    const credit = host.querySelector<HTMLElement>('[data-foam-credit]');
+    if (credit) credit.textContent = creditLine;
+    if (!portrait) return;
+    const CAPS = '600 10px "Archivo Narrow"', LS = 1.15, INK = '#5b6472';
+    const prev = g;
+    for (const cvs of host.querySelectorAll<HTMLCanvasElement>('canvas[data-key]')) {
+      // the CSS box is the source of truth for both, so a repaint after a resize cannot read
+      // back the backing store it set last time
+      const w = cvs.clientWidth || 340, h = cvs.clientHeight || 80;
+      cvs.width = w * DPR; cvs.height = h * DPR;
+      const c = cvs.getContext('2d')!;
+      c.setTransform(1, 0, 0, 1, 0, 0); c.scale(DPR, DPR);
+      c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+      g = c;
+      if (cvs.dataset.key === 'colour') {
+        const pitch = w / LETTERS.length, r = clamp(pitch / 2 - 7, 15.5, 20);
+        for (let i = 0; i < LETTERS.length; i++) {
+          const kx = pitch * (i + 0.5), ky = r + 3;
+          const n0 = LETTERS[i][0];
+          drawMark({ x: kx, y: ky, r, m: { n: n0, slug: '', py: 1900 + i, ps: 0, w: 0, x: kx, y: ky, r } }, i);
+          const lbl = `${n0}–${LETTERS[i][1]}`;
+          caps(lbl, CAPS, LS, kx - capsW(lbl, CAPS, LS) / 2, ky + r + 15, INK);
+        }
+      } else if (cvs.dataset.key === 'area') {
+        // the three nested marks, at the field's own scale, biggest first
+        const RBIG = rOf(MAXPS), foot = h - 4, x = RBIG + 2;
+        for (const [ps, lbl] of [[MAXPS, MAXPS.toFixed(1) + '%'], [1, '1%'], [0.1, '0.1%']] as [number, string][]) {
+          const rr = rOf(ps), cy2 = foot - rr, top = foot - rr * 2;
+          const sp: Placed = { x, y: cy2, r: rr, m: { n: lbl, slug: '', py: 1880, ps, w: 0, x, y: cy2, r: rr } };
+          if (ps === MAXPS) drawMark(sp, GREY, false);
+          else {
+            outline(sp, noise1(0x5123 + (ps * 10 | 0)), 0.04);
+            c.strokeStyle = css(towards(GREY, { L: 0.34, C: 0.02, h: GREY.h }, 0.8), 0.8);
+            c.lineWidth = 1.1; c.lineJoin = 'round'; c.stroke();
+          }
+          c.strokeStyle = 'rgba(124,134,151,0.42)'; c.lineWidth = 1;
+          c.beginPath(); c.moveTo(x + 2, top + 1); c.lineTo(x + RBIG + 10, top + 1); c.stroke();
+          caps(lbl, CAPS, LS, x + RBIG + 14, top + 4.5, '#7c8697');
+        }
+      } else {
+        const RBIG = rOf(MAXPS), x = RBIG + 2, y = h / 2;
+        const years = placed.reduce((b, p) => (p.m.ps > b.m.ps ? p : b), placed[0]).m.w;
+        drawMark({ x, y, r: RBIG, m: { n: 'O', slug: '', py: 1881, ps: MAXPS, w: years, x, y, r: RBIG } }, GREY, false);
+        caps('A full turn is a century', CAPS, LS, x + RBIG + 12, y + 4, '#7c8697');
+      }
+    }
+    g = prev;
   }
 
   // --- focus ---------------------------------------------------------------------------
@@ -421,24 +556,40 @@ export async function mountFoam(root: HTMLElement) {
       index.get(k2)!.push(p);
     }
   }
-  const hit = (mx: number, my: number) => {
-    let best: Placed | null = null;
-    for (const p of index.get(ckey(Math.floor(mx / cell), Math.floor(my / cell))) || [])
-      if ((mx - p.x) ** 2 + (my - p.y) ** 2 <= p.r * p.r && (!best || p.r < best.r)) best = p;
-    return best;
+  /**
+   * A pointer inside a mark takes that mark — the smallest one, so a little mark on top of a
+   * landmark still wins. A finger is not a pointer: at the field's density the median mark is
+   * 9px across, so a touch that lands on ground gets the nearest EDGE within `slop`. Without
+   * it half the field is untouchable, and with it as the first test the small marks would be
+   * unreachable, hence both, in that order.
+   */
+  const hit = (mx: number, my: number, slop = 0) => {
+    let inside: Placed | null = null, near: Placed | null = null, nd = Infinity;
+    for (const p of index.get(ckey(Math.floor(mx / cell), Math.floor(my / cell))) || []) {
+      const d2 = (mx - p.x) ** 2 + (my - p.y) ** 2;
+      if (d2 <= p.r * p.r) { if (!inside || p.r < inside.r) inside = p; continue; }
+      if (slop > 0 && d2 <= (p.r + slop) ** 2) {
+        const d = Math.sqrt(d2) - p.r;
+        if (d < nd) { nd = d; near = p; }
+      }
+    }
+    return inside || near;
   };
 
   // The story sits inside the field, not in the top band: the band is spoken for — the
   // headline, the search and the claim all live there — and at focus the field is ghosted to
   // 13%, so the roomiest clear ground on the page is the field itself. Which corner it takes
   // is chosen against the focused mark, because a panel that covers the thing you just
-  // pointed at is the worst version of this.
+  // pointed at is the worst version of this. (Narrow: there is no clear ground, so the story
+  // is a sheet in markup instead — see showSheet.)
   const PW = 470, PH = 196, PAD = 18;
   // The upper slots start below whatever the overlay actually occupies, measured — the
   // headline, the deck, the search and the claim are set in container units and move with
   // the page width, so a hard-coded y here is a collision waiting for a different viewport.
   const overlay = [...root.querySelectorAll<HTMLElement>('.head h1, .head .deck, .search input, .claim .big, .claim .cap')];
-  const topLimit = (() => {
+  let topCache: number | null = null;
+  const topLimit = () => {
+    if (topCache !== null) return topCache;
     const rect = canvas.getBoundingClientRect();
     const sc = H / rect.height;
     let low = foam.band.y0;
@@ -446,13 +597,14 @@ export async function mountFoam(root: HTMLElement) {
       const b = el.getBoundingClientRect();
       low = Math.max(low, (b.bottom - rect.top) * sc);
     }
-    return low + 34;
-  })();
-  const SLOTS = [
-    { x0: BX0 + 26, y0: H - 184 - PH }, { x0: BX1 - 26 - PW, y0: H - 184 - PH },
-    { x0: BX0 + 26, y0: topLimit }, { x0: BX1 - 26 - PW, y0: topLimit },
-  ];
+    return (topCache = low + 34);
+  };
   const slotFor = (p: Placed) => {
+    const top = topLimit();
+    const SLOTS = [
+      { x0: BX0 + 26, y0: H - 184 - PH }, { x0: BX1 - 26 - PW, y0: H - 184 - PH },
+      { x0: BX0 + 26, y0: top }, { x0: BX1 - 26 - PW, y0: top },
+    ];
     let best = SLOTS[0], bestScore = -Infinity;
     for (const s of SLOTS) {
       const cx2 = s.x0 + PW / 2, cy2 = s.y0 + PH / 2;
@@ -597,6 +749,71 @@ export async function mountFoam(root: HTMLElement) {
     view.textAlign = 'left';
   }
 
+  // --- the sheet: the focused name on a narrow page --------------------------------------
+  const sheet = root.querySelector<HTMLAnchorElement>('[data-foam-sheet]');
+  const sheetName = root.querySelector<HTMLElement>('[data-sheet-name]');
+  const sheetMeta = root.querySelector<HTMLElement>('[data-sheet-meta]');
+  const spark = root.querySelector<HTMLCanvasElement>('[data-sheet-spark]');
+  const status = root.querySelector<HTMLElement>('[data-foam-status]');
+
+  const readOut = (p: Placed) =>
+    `${p.m.n} — peak ${p.m.ps.toFixed(2)}% of American births in ${p.m.py}, ` +
+    `${p.m.w} years above half that peak.`;
+
+  function showSheet(p: Placed | null) {
+    if (!sheet) return;
+    if (!p) {
+      sheet.classList.remove('is-open');
+      sheet.setAttribute('aria-hidden', 'true'); sheet.tabIndex = -1;
+      return;
+    }
+    sheet.href = `${base}/name/${p.m.slug}`;
+    if (sheetName) sheetName.textContent = p.m.n;
+    if (sheetMeta) sheetMeta.textContent =
+      `peak ${p.m.ps.toFixed(2)}% · ${p.m.py} · ${p.m.w} years above half of it`;
+    if (spark) { const c = spark.getContext('2d'); c?.clearRect(0, 0, spark.width, spark.height); }
+    sheet.setAttribute('aria-hidden', 'false'); sheet.tabIndex = 0;
+    sheet.classList.add('is-open');
+  }
+
+  /** the mark's own curve, at sheet size, in the same ink — a bigger version of the mark */
+  function drawSpark(p: Placed, cv: number[]) {
+    if (!spark) return;
+    const w = spark.clientWidth || 132, h = spark.clientHeight || 60;
+    spark.width = w * DPR; spark.height = h * DPR;
+    const c = spark.getContext('2d')!;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.scale(DPR, DPR); c.clearRect(0, 0, w, h);
+    const b2 = LETTERS[blockOf(p.m.n)][2];
+    const ink = towards(b2, { L: 0.26, C: b2.C, h: b2.h }, 0.66);
+    const seed = hashOf(p.m.n, p.m.py);
+    const n = cv.length, peak = Math.max(...cv), foot = h - 4;
+    const sx = (i: number) => 2 + (i / (n - 1)) * (w - 4);
+    const sy = (v: number) => foot - (v / peak) * (foot - 6);
+    const pts: [number, number][] = [];
+    for (let i = 0; i < n; i++) pts.push([sx(i), sy(cv[i])]);
+    c.beginPath();
+    c.moveTo(2, foot);
+    for (const [x, y] of pts) c.lineTo(x, y);
+    c.lineTo(w - 2, foot); c.closePath();
+    c.fillStyle = css(towards(b2, { L: 0.97, C: 0.01, h: b2.h }, 0.56), 0.9);
+    c.fill();
+    c.save(); c.clip();
+    speckle(c, w / 2, foot, w * 0.62, 300, css(ink), rng(seed ^ 0x9e3779b9),
+      { rMin: 0.4, rMax: 1.4, aMin: 0.04, aMax: 0.16 });
+    c.restore();
+    inkPath(c, [[2, foot], [w - 2, foot]], css(ink), 0.34, 1.0, { seed: seed ^ 0x77, wobble: 0.5 });
+    inkPath(c, pts, css(ink), 0.92, 1.7, { seed, wobble: 0.42 });
+  }
+
+  /** scroll the focused mark into the strip of glass the sheet is not covering */
+  function reveal(p: Placed) {
+    if (!portrait) return;
+    const rect = canvas.getBoundingClientRect();
+    const y = rect.top + window.scrollY + (p.y / H) * rect.height;
+    const free = window.innerHeight - (sheet?.offsetHeight || 0);
+    window.scrollTo({ top: Math.max(0, y - free / 2), behavior: reduced ? 'auto' : 'smooth' });
+  }
+
   let focus: Placed | null = null;
   let lit: Set<string> | null = null;          // an explore set, e.g. every ghost
 
@@ -608,24 +825,25 @@ export async function mountFoam(root: HTMLElement) {
     view.fillStyle = css(PAPER); view.fillRect(0, 0, W, H);
     // The veil falls on the FIELD only. Dimming the apparatus with it takes the key away at
     // the exact moment the reader is using it — the whole point of the ghost is to leave one
-    // mark readable, and a readable mark you can no longer decode is worth nothing.
-    const veil = foam.band.y1 + 24;
+    // mark readable, and a readable mark you can no longer decode is worth nothing. On the
+    // narrow page the apparatus is markup, so the whole canvas is field.
+    const veil = portrait ? H : foam.band.y1 + 24;
     view.globalAlpha = 0.13;
     view.drawImage(buf, 0, 0, W * DPR, veil * DPR, 0, 0, W, veil);
     view.globalAlpha = 1;
-    view.drawImage(buf, 0, veil * DPR, W * DPR, (H - veil) * DPR, 0, veil, W, H - veil);
+    if (veil < H) view.drawImage(buf, 0, veil * DPR, W * DPR, (H - veil) * DPR, 0, veil, W, H - veil);
     g = view;
     if (lit) {
       // A lit set has to be readable as names, not as anonymous dots — the panels it
       // replaced listed six names in words, so every lit mark says which one it is.
       for (const p of placed) if (lit.has(p.m.slug)) drawMark(p, blockOf(p.m.n));
       view.textAlign = 'center';
-      view.font = '500 11.5px Outfit';
+      view.font = `500 ${11.5 * UIS}px Outfit`;
       for (const p of placed) {
         if (!lit.has(p.m.slug)) continue;
-        const ly = p.y + p.r + 14, w2 = view.measureText(p.m.n).width;
+        const ly = p.y + p.r + 14 * UIS, w2 = view.measureText(p.m.n).width;
         view.fillStyle = css(PAPER, 0.9);
-        view.fillRect(p.x - w2 / 2 - 4, ly - 11, w2 + 8, 15);
+        view.fillRect(p.x - w2 / 2 - 4, ly - 11 * UIS, w2 + 8, 15 * UIS);
         view.fillStyle = '#1d2430';
         view.fillText(p.m.n, p.x, ly);
       }
@@ -645,32 +863,42 @@ export async function mountFoam(root: HTMLElement) {
       view.strokeStyle = css(towards(b3, { L: 0.26, C: b3.C, h: b3.h }, 0.66), 0.8);
       view.lineWidth = 1.3; view.stroke();
 
-      const B2 = slotFor(focus);
-      const tx2 = clamp(focus.x, B2.x0 + 12, B2.x1 - 12);
-      const ty2 = focus.y < B2.y0 ? B2.y0 - PAD : B2.y1 + PAD;
-      const d2 = Math.hypot(tx2 - focus.x, ty2 - focus.y);
-      if (d2 > focus.r + 26) {
-        const t0 = (focus.r + 9) / d2;
-        inkPath(view, [[focus.x + (tx2 - focus.x) * t0, focus.y + (ty2 - focus.y) * t0], [tx2, ty2]],
-          css(towards(b3, { L: 0.26, C: b3.C, h: b3.h }, 0.66)), 0.5, 1.1,
-          { seed: hashOf(focus.m.n, 7), wobble: 0.6 });
+      if (!portrait) {
+        const B2 = slotFor(focus);
+        const tx2 = clamp(focus.x, B2.x0 + 12, B2.x1 - 12);
+        const ty2 = focus.y < B2.y0 ? B2.y0 - PAD : B2.y1 + PAD;
+        const d2 = Math.hypot(tx2 - focus.x, ty2 - focus.y);
+        if (d2 > focus.r + 26) {
+          const t0 = (focus.r + 9) / d2;
+          inkPath(view, [[focus.x + (tx2 - focus.x) * t0, focus.y + (ty2 - focus.y) * t0], [tx2, ty2]],
+            css(towards(b3, { L: 0.26, C: b3.C, h: b3.h }, 0.66)), 0.5, 1.1,
+            { seed: hashOf(focus.m.n, 7), wobble: 0.6 });
+        }
       }
     }
     g = bctx;
-    if (focus) {
+    if (focus && !portrait) {
       const cv = curves.get(focus.m.slug);
       if (cv) drawStory(focus, cv);
     }
   }
 
-  async function setFocus(p: Placed | null) {
+  async function setFocus(p: Placed | null, opts: { speak?: boolean; reveal?: boolean } = {}) {
     if (p === focus) return;
     focus = p;
     render();
-    if (p) { const cv = await curveFor(p.m); if (cv && focus === p) render(); }
+    if (portrait) showSheet(p);
+    // hover must not talk: a mouse crossing the field would read out a hundred names
+    if (opts.speak && status) status.textContent = p ? readOut(p) : '';
+    if (p && opts.reveal) reveal(p);
+    if (p) {
+      const cv = await curveFor(p.m);
+      if (cv && focus === p) { render(); if (portrait) drawSpark(p, cv); }
+    }
   }
 
   paintField();
+  paintKeys();
   render();
 
   // The craft floor runs against this, not against a screenshot and not against the
@@ -689,8 +917,8 @@ export async function mountFoam(root: HTMLElement) {
         };
       });
     const envelope: [number, number, number][] = [];
-    for (let px = foam.band.x0; px <= foam.band.x1; px += 4) envelope.push([px, topAt(px), botAt(px)]);
-    return { ...AUDIT, dom, envelope, marks: placed.map((p) => [p.x, p.y, p.r]) };
+    if (!portrait) for (let px = foam.band.x0; px <= foam.band.x1; px += 4) envelope.push([px, topAt(px), botAt(px)]);
+    return { ...AUDIT, portrait, dom, envelope, marks: placed.map((p) => [p.x, p.y, p.r]) };
   };
 
   // the rest of the page can now draw a name as the same object this one does
@@ -707,36 +935,103 @@ export async function mountFoam(root: HTMLElement) {
     },
   });
 
-  const toLocal = (e: MouseEvent) => {
-    const r = canvas.getBoundingClientRect();
-    return [((e.clientX - r.left) * W) / r.width, ((e.clientY - r.top) * H) / r.height] as const;
-  };
-  canvas.addEventListener('mousemove', (e) => {
-    const [mx, my] = toLocal(e);
+  // --- pointer -------------------------------------------------------------------------
+  // The field bound `mousemove` and `click`, which is a hover interface: on a touch screen
+  // there is no hover, so the story panel was unreachable and the first tap navigated away
+  // from a field nobody had been able to read yet. So the two devices get the two
+  // interactions they actually have — a mouse hovers to look and clicks to open, a finger
+  // taps to look and taps the same mark again to open.
+  const local = (cx: number, cy2: number, rect: DOMRect) =>
+    [((cx - rect.left) * W) / rect.width, ((cy2 - rect.top) * H) / rect.height] as const;
+  const open = (p: Placed) => { location.href = `${base}/name/${p.m.slug}`; };
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    const [mx, my] = local(e.clientX, e.clientY, canvas.getBoundingClientRect());
     const f = hit(mx, my);
     canvas.style.cursor = f ? 'pointer' : 'default';
     void setFocus(f);
-  });
-  canvas.addEventListener('mouseleave', () => void setFocus(null));
+  }, { signal });
+  canvas.addEventListener('pointerleave', (e) => {
+    if (e.pointerType === 'mouse') void setFocus(null);
+  }, { signal });
+
+  let tapX = 0, tapY = 0, tapT = 0, lastTouch = -1e9;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    tapX = e.clientX; tapY = e.clientY; tapT = e.timeStamp;
+  }, { signal });
+  canvas.addEventListener('pointerup', (e) => {
+    if (e.pointerType === 'mouse') return;
+    lastTouch = e.timeStamp;
+    // a drag is the page scrolling past under the finger, not a choice
+    if (Math.hypot(e.clientX - tapX, e.clientY - tapY) > 12 || e.timeStamp - tapT > 700) return;
+    const rect = canvas.getBoundingClientRect();
+    const [mx, my] = local(e.clientX, e.clientY, rect);
+    const f = hit(mx, my, (11 * W) / rect.width);
+    if (f && focus && f.m.slug === focus.m.slug) { open(f); return; }
+    void setFocus(f, { speak: true });
+  }, { signal });
   canvas.addEventListener('click', (e) => {
-    const [mx, my] = toLocal(e);
+    // touch synthesises a click after pointerup; that one already chose what to do
+    if (e.timeStamp - lastTouch < 900) return;
+    const [mx, my] = local(e.clientX, e.clientY, canvas.getBoundingClientRect());
     const f = hit(mx, my);
-    if (f) location.href = `${base}/name/${f.m.slug}`;
-  });
+    if (f) open(f);
+  }, { signal });
+
+  // --- keyboard ------------------------------------------------------------------------
+  // 1,572 names and no way in without a mouse. Arrows walk the pack: the next mark in the
+  // pressed direction, scored by how far along that direction it is plus how far off it —
+  // a cone, so "right" cannot answer with something almost straight up.
+  const step = (from: Placed | null, dx: number, dy: number) => {
+    if (!from) return placed.reduce((b, p) => (along(p) < along(b) ? p : b), placed[0]);
+    let best: Placed | null = null, bs = Infinity;
+    for (const p of placed) {
+      if (p === from) continue;
+      const ax = (p.x - from.x) * dx + (p.y - from.y) * dy;
+      if (ax <= 0.5) continue;
+      const off = Math.abs((p.x - from.x) * dy - (p.y - from.y) * dx);
+      if (off > ax * 2.2 + 26) continue;
+      const s = ax + off * 1.8;
+      if (s < bs) { bs = s; best = p; }
+    }
+    return best || from;
+  };
+  canvas.addEventListener('keydown', (e) => {
+    const dirs: Record<string, [number, number]> = {
+      ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowDown: [0, 1], ArrowUp: [0, -1],
+    };
+    const d = dirs[e.key];
+    if (d) {
+      e.preventDefault();
+      void setFocus(step(focus, d[0], d[1]), { speak: true, reveal: true });
+      return;
+    }
+    if ((e.key === 'Enter' || e.key === ' ') && focus) { e.preventDefault(); open(focus); return; }
+    if (e.key === 'Escape' && focus) { e.preventDefault(); void setFocus(null, { speak: true }); }
+  }, { signal });
 
   // the search box drives the same focus state, so typing your name lights it in the field
   const input = root.querySelector<HTMLInputElement>('input[data-foam-search]');
   if (input) {
+    let typing = 0;
     input.addEventListener('input', () => {
       const q = input.value.trim().toLowerCase();
-      if (!q) { void setFocus(null); return; }
+      if (!q) { clearTimeout(typing); void setFocus(null); return; }
       const f = placed.find((p) => p.m.n.toLowerCase() === q) ||
                 placed.find((p) => p.m.n.toLowerCase().startsWith(q)) || null;
-      void setFocus(f);
-    });
+      void setFocus(f, { speak: true });
+      // On the narrow page the field runs three screens deep, so a mark lit off-screen is
+      // no answer at all — the page goes to it. But not on the keystroke: scrolling away
+      // from a box someone is still typing into, with the keyboard up, is the page fighting
+      // them. It goes when they stop.
+      clearTimeout(typing);
+      if (f) typing = window.setTimeout(() => { if (focus === f) reveal(f); }, 480);
+    }, { signal });
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && focus) location.href = `${base}/name/${focus.m.slug}`;
-    });
+      if (e.key === 'Enter' && focus) open(focus);
+    }, { signal });
   }
 
   // explore modes: ghosts / comebacks / unisex are selections over this same field, so
@@ -758,6 +1053,7 @@ export async function mountFoam(root: HTMLElement) {
       const SW = strip.width / 2, SH = strip.height / 2;
       const sg = strip.getContext('2d')!;
       sg.setTransform(1, 0, 0, 1, 0, 0); sg.scale(2, 2);
+      sg.clearRect(0, 0, SW, SH);
       const prev = g;
       g = sg;
       const kind = btn.dataset.mode;
@@ -818,6 +1114,22 @@ export async function mountFoam(root: HTMLElement) {
       if (!on) btn.setAttribute('aria-pressed', 'true');
       void setFocus(null);
       render();
-    });
+    }, { signal });
   }
+
+  // The overlay is measured, so a width change invalidates the measurement — and the
+  // portrait key canvases are drawn at their own CSS size, so they are redrawn with it.
+  let idle = 0;
+  const settle = () => {
+    topCache = null;
+    clearTimeout(idle);
+    idle = window.setTimeout(() => { paintKeys(); render(); }, 160);
+  };
+  window.addEventListener('resize', settle, { signal });
+  window.addEventListener('orientationchange', settle, { signal });
+
+  // Crossing the breakpoint changes which pack the page is drawing, and that is a different
+  // solve — not a restyle. Everything this mount owns hangs off one signal, so remounting is
+  // safe: the old listeners go with it.
+  narrow.addEventListener('change', () => { void mountFoam(root); }, { signal });
 }

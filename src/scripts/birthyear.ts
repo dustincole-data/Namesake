@@ -7,6 +7,7 @@ for (const el of document.querySelectorAll<HTMLElement>('[data-birthyear]')) {
   const map = JSON.parse(el.dataset.map!) as Record<string, { M: string[]; F: string[] }>;
   const input = el.querySelector('input')!;
   const slots = { M: el.querySelector('[data-slot="M"]') as HTMLElement, F: el.querySelector('[data-slot="F"]') as HTMLElement };
+  const status = el.querySelector<HTMLElement>('[data-by-status]');
   const min = Number(input.min), max = Number(input.max);
   let field: FieldApi | null = null;
 
@@ -45,6 +46,7 @@ for (const el of document.querySelectorAll<HTMLElement>('[data-birthyear]')) {
         })
         .join('');
     }
+    if (status) status.textContent = `Showing the top names of ${y}.`;
     paintMarks();
   };
   input.addEventListener('input', render);

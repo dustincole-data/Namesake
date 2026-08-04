@@ -111,6 +111,13 @@ async function main() {
   const foam = buildFoam(foamInput, LANDSCAPE);
   const foamPortrait = buildFoam(foamInput, PORTRAIT);
 
+  // Every mark in the field is a link, so every mark needs a page. The two sets are chosen on
+  // different measures — pages by all-time births, the field by the biggest single year a
+  // name ever took — so a name that spiked once and never sold in volume gets drawn on the
+  // front door and 404s off it. One name, at time of writing (Deneen), which is exactly the
+  // kind of defect that survives because nobody clicks it.
+  for (const m of foam.marks) if (!topSlugs.includes(m.slug)) topSlugs.push(m.slug);
+
   // globals for the reveal: per-year total births (reconstructs any name's per-year
   // count client-side) and END_YEAR rank->name (modern rank-equivalent).
   const births = Array.from({ length: END_YEAR - START_YEAR + 1 }, (_, i) => totalBirthsByYear.get(START_YEAR + i) ?? 0);
