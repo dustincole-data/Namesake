@@ -19,7 +19,7 @@ const modes = [
 ---
 <section class="foam" data-foam data-base={base}>
   <div class="stage">
-    <canvas width="1400" height="900" role="img"
+    <canvas width="1400" height="1026" role="img"
       aria-label="Every American given name that ever reached 0.04% of a year's births, 1,572 of them, drawn as one bubble each, sized by the largest share of a year's births it ever took and placed left to right by the year it crested."></canvas>
 
     <div class="ui">
@@ -48,6 +48,7 @@ const modes = [
     {modes.map(m => (
       <button type="button" data-mode={m.key} aria-pressed="false"
         data-slugs={m.items.map(i => i.slug).join(',')}>
+        <canvas class="strip" width="680" height="152" aria-hidden="true"></canvas>
         <span class="lbl">{m.label}</span>
         <span class="blurb">{m.blurb}</span>
       </button>
@@ -57,7 +58,7 @@ const modes = [
 
 <style>
   .foam { margin: 0 0 46px; }
-  .stage { position: relative; width: 100%; aspect-ratio: 1400 / 900; }
+  .stage { position: relative; width: 100%; aspect-ratio: 1400 / 1026; }
   .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   .ui { position: absolute; inset: 0; pointer-events: none;
         container-type: inline-size; font-size: clamp(9px, 1.0vw, 14px); }
@@ -79,18 +80,24 @@ const modes = [
 
   .claim { position: absolute; right: 5.14cqw; top: 5.8cqw; width: 20.4cqw; text-align: right; }
   .claim .big { font: 700 3.7cqw/1 var(--display); letter-spacing: -.035em; }
-  .claim .n1 { color: var(--accent); }
-  .claim .n2 { color: var(--stamp); }
+  /* each number in the colour of the name it is about — John J–K, Liam L–M */
+  .claim .n1 { color: var(--ink-jk); }
+  .claim .n2 { color: var(--ink-lm); }
   .claim .cap { margin: .5cqw 0 1.6cqw; color: var(--ink-soft); font: 300 .9cqw/1.45 var(--display); }
   .claim .cap b { color: var(--ink); font-weight: 500; }
   .claim .cap:last-child { margin-bottom: 0; }
 
-  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
-  .modes button { text-align: left; padding: 18px 20px; border: 1px solid var(--rule);
-    border-radius: 14px; background: var(--panel); cursor: pointer; color: inherit; }
-  .modes button:hover { border-color: var(--ink-mute); }
-  .modes button[aria-pressed='true'] { border-color: var(--ink); background: var(--ground); }
+  /* No boxes. Each mode is fronted by the marks it actually lights, drawn at the field's own
+     scale in the field's own hand, so the reader sees the thing before choosing it. */
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+           gap: 30px; padding-top: 26px; border-top: 1px solid var(--rule); }
+  .modes button { text-align: left; padding: 0; border: 0; background: none;
+    cursor: pointer; color: inherit; }
+  .modes .strip { display: block; width: 100%; max-width: 340px; height: auto; margin-bottom: 12px; }
   .modes .lbl { display: block; font: 500 18px/1.2 var(--display); color: var(--ink); }
+  .modes button:hover .lbl { color: var(--accent); }
+  .modes button[aria-pressed='true'] .lbl { color: var(--accent); }
+  .modes button[aria-pressed='true'] .lbl::after { content: ' — lit'; font: 400 12px var(--mono); color: var(--ink-mute); }
   .modes .blurb { display: block; margin-top: 5px; font: 400 13px/1.45 var(--mono); color: var(--ink-soft); }
 
   @media (max-width: 720px) {
