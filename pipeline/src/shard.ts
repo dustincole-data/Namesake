@@ -14,8 +14,15 @@ export async function writeArtifacts(
   await rm(outDir, { recursive: true, force: true });
   await mkdir(join(outDir, 'names'), { recursive: true });
 
-  // autocomplete index
-  const index = payloads.map(p => [p.name, p.slug]);
+  // Autocomplete index — the names that HAVE a page, in popularity order.
+  //
+  // It used to be every name in the data: 105,966 entries and 2.2 MB, fetched the moment
+  // anyone touched a search box. Only the top 5,000 are prerendered, so ~95% of what it
+  // suggested was a 404 — typing "za" offered five dead links out of eight. Indexing the
+  // built pages fixes the broken suggestions and the payload with one change, and topSlugs
+  // order means the likeliest name is offered first rather than the earliest-recorded one.
+  const nameBySlug = new Map(payloads.map(p => [p.slug, p.name]));
+  const index = topSlugs.map(s => [nameBySlug.get(s)!, s]);
   await writeFile(join(outDir, 'names.json'), JSON.stringify(index));
 
   // detail shards

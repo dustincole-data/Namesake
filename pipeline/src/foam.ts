@@ -38,20 +38,63 @@ export interface FoamMark {
   x: number; y: number; r: number;
 }
 
+/**
+ * Where the field stands on the page, in the two directions the pack actually has.
+ *
+ * ALONG is the time axis — the direction the years are allocated in. ACROSS is the spread,
+ * whose extent at each year is the ridge. The solver only ever works in these two, which is
+ * what lets one packer serve both a landscape field and a portrait one: `vertical` decides
+ * only which page axis each becomes when the marks are written out.
+ */
+export interface FoamGeom {
+  page: { w: number; h: number };
+  along: { min: number; max: number };
+  across: { min: number; max: number };
+  vertical: boolean;
+}
+
+/** The desktop field: time runs left to right, the ridge is its height. */
+export const LANDSCAPE: FoamGeom = {
+  page: { w: 1400, h: 1026 },
+  along: { min: 72, max: 1332 },
+  across: { min: 230, max: 810 },
+  vertical: false,
+};
+
+/**
+ * The phone field: the same argument stood on end.
+ *
+ * A 1,572-mark field rendered into 390px of phone is 3px a mark — which is why the page
+ * used to put it behind a sideways scrollbar instead. Turning it means the long axis is the
+ * one the phone actually has, so the page is ~2.6× narrower and every mark is ~2.7× bigger
+ * on glass. It also puts the argument on the gesture: the wedge narrows as you scroll, so
+ * "the big names got small" is something you travel through rather than something you are
+ * shown. The left gutter carries the era labels, horizontal — a phone must never ask anyone
+ * to read sideways.
+ */
+export const PORTRAIT: FoamGeom = {
+  page: { w: 560, h: 2010 },
+  along: { min: 40, max: 1970 },
+  across: { min: 84, max: 536 },
+  vertical: true,
+};
+
 export interface Foam {
   k: number; rMin: number; seed: number;
+  page: { w: number; h: number };
+  vertical: boolean;
   band: { x0: number; x1: number; y0: number; y1: number };
+  /** the centre line of the spread, on whichever page axis ACROSS became */
   cy: number; y0: number; y1: number;
-  yearEdge: number[];      // year -> x boundary, length span+1
-  yearH: number[];         // year -> band height
+  yearEdge: number[];      // year -> boundary along the time axis, length span+1
+  yearH: number[];         // year -> the ridge's full extent across
   marks: FoamMark[];
 }
 
 /** Peak share below this is noise, not a name the field can carry. 0.04% of a year. */
 export const FOAM_THRESHOLD = 0.0004;
 
-const BX0 = 72, BX1 = 1332, BY0 = 230, BY1 = 810, CY = 520;
-const R_MIN = 1.4, DENSITY = 0.62, HMAX = 580, HEIGHT_IN_MARKS = 7.4;
+const R_MIN = 1.4, DENSITY = 0.62, HEIGHT_IN_MARKS = 7.4;
 const ITER = 900, FREEZE = 650, RELAX = 0.62, SWEEPS = 1500, SEED = 20260801;
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
@@ -65,7 +108,14 @@ const rng = (seed: number) => {
  *  tangent and the ground never gets through. */
 const gapOf = (ri: number, rj: number) => Math.max(1.0, 0.17 * (ri + rj));
 
-export function buildFoam(input: FoamInput[]): Foam {
+export function buildFoam(input: FoamInput[], geom: FoamGeom = LANDSCAPE): Foam {
+  // The solver works in ALONG (the time axis, named x here) and ACROSS (the spread, y). For
+  // a portrait field those are the page's y and x respectively, and the swap happens once,
+  // where the marks are written out — never inside the solve.
+  const BX0 = geom.along.min, BX1 = geom.along.max;
+  const BY0 = geom.across.min, BY1 = geom.across.max;
+  const CY = (BY0 + BY1) / 2, HMAX = BY1 - BY0;
+
   const marks = input.filter((m) => m.peakShare >= FOAM_THRESHOLD);
   if (!marks.length) throw new Error('foam: no marks above threshold');
   const SPAN = END_YEAR - START_YEAR + 1;
@@ -235,9 +285,12 @@ export function buildFoam(input: FoamInput[]): Foam {
         }
       }
     }
+    // the one place ALONG/ACROSS become the page's x and y
     const out: FoamMark[] = sorted.map((m, i) => ({
       n: m.name, slug: m.slug, py: m.peakYear, ps: +(m.peakShare * 100).toFixed(4), w: widthOf(m),
-      x: +X[i].toFixed(2), y: +Y[i].toFixed(2), r: +R[i].toFixed(2),
+      x: +(geom.vertical ? Y[i] : X[i]).toFixed(2),
+      y: +(geom.vertical ? X[i] : Y[i]).toFixed(2),
+      r: +R[i].toFixed(2),
     }));
     return { out, axis, H, overlaps };
   }
@@ -254,7 +307,10 @@ export function buildFoam(input: FoamInput[]): Foam {
     if (res.overlaps === 0) {
       return {
         k: +K.toFixed(3), rMin: R_MIN, seed: SEED,
-        band: { x0: BX0, x1: BX1, y0: BY0, y1: BY1 },
+        page: geom.page, vertical: geom.vertical,
+        band: geom.vertical
+          ? { x0: BY0, x1: BY1, y0: BX0, y1: BX1 }
+          : { x0: BX0, x1: BX1, y0: BY0, y1: BY1 },
         cy: CY, y0: START_YEAR, y1: END_YEAR,
         yearEdge: res.axis.edge.map((v) => +v.toFixed(2)),
         yearH: Array.from(res.H, (v) => +v.toFixed(1)),
