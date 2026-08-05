@@ -5,7 +5,8 @@
   "trailingSlash": false,
   "functions": {
     "api/og.ts": {
-      "includeFiles": "{scripts/card.ts,src/lib/archetype.ts,src/lib/reveal.ts,src/lib/format.ts,src/lib/chart.ts}"
+      "_comment": "Every module this function reaches that lives outside /api, listed: the bundler does not trace relative specifiers that carry a .ts extension. Adding an import to scripts/card.ts without adding it here returns FUNCTION_INVOCATION_FAILED at runtime and nowhere earlier — the build stays green. card.ts drew its curve with src/lib/chart.ts and now draws the real mark, so chart.ts is out and draw/ink/letters are in.",
+      "includeFiles": "{scripts/card.ts,src/lib/archetype.ts,src/lib/reveal.ts,src/lib/format.ts,src/lib/draw.ts,src/lib/ink.ts,src/lib/letters.ts}"
     }
   },
   "redirects": [
