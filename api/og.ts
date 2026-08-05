@@ -12,6 +12,16 @@ import { shardKey } from '../src/lib/format.ts';
 // Runs on the default Node.js runtime (not edge): edge's bundler can't trace
 // relative imports that live outside /api, which the shared src/lib and
 // scripts/card modules require.
+//
+// EVERY module reached from here that lives outside /api must ALSO be named in
+// vercel.json's functions["api/og.ts"].includeFiles — the bundler does not trace
+// relative specifiers carrying a .ts extension. Adding an import to scripts/card.ts
+// and not to that list returns FUNCTION_INVOCATION_FAILED from the deployed
+// function and nowhere earlier: the build stays green and the static cards, which
+// render from the same code in-process, come out fine. Currently: card.ts, and
+// archetype / reveal / format / draw / ink / letters from src/lib.
+// (vercel.json cannot carry this note itself — its schema rejects unknown keys,
+// and a "_comment" in there fails the deployment before the build starts.)
 async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const slug = (url.searchParams.get('slug') || '').toLowerCase();
