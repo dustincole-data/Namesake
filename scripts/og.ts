@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cpus } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import satori from 'satori';
@@ -106,12 +106,20 @@ async function brandCard() {
   return 1;
 }
 
+/**
+ * This module is both a script and a small library — FONTS, spanOf and optsFor are what the
+ * card is rendered WITH, so anything that renders a card wants them. Without this guard,
+ * importing one of them draws all 5,002 cards as a side effect of the import, which is eight
+ * minutes and a very confusing eight minutes.
+ */
+const isEntry = !!process.argv[1] && fileURLToPath(import.meta.url) === pathToFileURL(process.argv[1]).href;
+
 if (!isMainThread && workerData?.og) {
   // a worker: draw its slice, reporting progress as deltas so the parent can total them
   const { slugs, from, to } = workerData as { slugs: string[]; from: number; to: number };
   const n = await renderSlice(slugs, from, to, (d) => { if (d) parentPort!.postMessage({ d }); });
   parentPort!.postMessage({ total: n });
-} else {
+} else if (isEntry) {
   await mkdir(OUT, { recursive: true });
   // One card per prerendered name (top.json == build.ts TOP_N) so no prerendered
   // page ever ships an og:image that 404s. Kept in lockstep by construction.

@@ -251,8 +251,10 @@ export function cardTree(o: CardOpts) {
   const st = story(o, 56, 408, W - 112, 114);
   const svg = [...st.nodes, ...mark(o.name, o.peakYear, o.spanYears, MX, MY, R)];
 
+  // "about", not "≈": the static Google faces are a Latin subset and have no almost-equal
+  // sign, and satori draws a missing glyph as .notdef — a tofu box, on a share card.
   const stamp = o.year != null && o.badgeLabel && o.countInYear != null
-    ? `Born ${o.year} · ${o.badgeLabel} · ≈${o.countInYear.toLocaleString('en-US')} that year`
+    ? `Born ${o.year} · ${o.badgeLabel} · about ${o.countInYear.toLocaleString('en-US')} that year`
     : `${o.archetypeLabel} · ${o.peakCount.toLocaleString('en-US')} babies at its peak · ${o.spanYears} years above half of it`;
 
   // The peak label rides its own crosshair and flips side near the right edge. Its top is
