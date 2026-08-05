@@ -26,6 +26,7 @@
  */
 import { rng, noise1, towards, css, speckle, grain, clamp, type Lch } from '../lib/draw.ts';
 import { inkGlyph, inkPath } from '../lib/letters.ts';
+import { LETTERS, blockOf, hashOf, markOutline, wobbleFor } from '../lib/ink.ts';
 import { publishField, type FieldMark } from '../lib/field.ts';
 
 interface Mark { n: string; slug: string; py: number; ps: number; w: number; x: number; y: number; r: number; }
@@ -41,15 +42,8 @@ const PAPER: Lch = { L: 0.988, C: 0.004, h: 250 };
 /** Below this the page takes the portrait pack. Foam.astro's breakpoint is the same number. */
 const NARROW = '(max-width: 720px)';
 
-const LETTERS: [string, string, Lch][] = [
-  ['A', 'B', { L: 0.58, C: 0.155, h: 25 }],
-  ['C', 'D', { L: 0.68, C: 0.150, h: 72 }],
-  ['E', 'I', { L: 0.70, C: 0.145, h: 128 }],
-  ['J', 'K', { L: 0.60, C: 0.120, h: 178 }],
-  ['L', 'M', { L: 0.58, C: 0.130, h: 232 }],
-  ['N', 'S', { L: 0.54, C: 0.155, h: 292 }],
-  ['T', 'Z', { L: 0.60, C: 0.165, h: 344 }],
-];
+// LETTERS / blockOf / hashOf / markOutline now live in ../lib/ink.ts, so the share card can
+// draw the same mark from the same generators instead of a lookalike.
 // the fourth field is the portrait label: the gutter is 84 units wide and a range does not
 // fit in it, so the narrow axis names each era by where it starts
 const ERAS: [number, number, string, string][] = [
@@ -58,17 +52,6 @@ const ERAS: [number, number, string, string][] = [
   [1970, 1989, '1970s–80s', '1970s'], [1990, 2009, '1990s–2000s', '1990s'],
   [2010, 2030, '2010s–now', '2010s'],
 ];
-const blockOf = (name: string) => {
-  const c0 = name[0].toUpperCase();
-  for (let i = 0; i < LETTERS.length; i++) if (c0 >= LETTERS[i][0] && c0 <= LETTERS[i][1]) return i;
-  return LETTERS.length - 1;
-};
-const hashOf = (str: string, salt: number) => {
-  let h = 2166136261 ^ salt;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-};
-
 /** every listener this mount owns, so a breakpoint crossing can remount without doubling up */
 let live: AbortController | null = null;
 
@@ -149,14 +132,9 @@ export async function mountFoam(root: HTMLElement) {
   // low-frequency noise walk, laid twice off-register the way a pencil goes round twice.
   let g: CanvasRenderingContext2D = bctx;
   const outline = (p: Placed, k: (v: number) => number, wob: number, phase = 0, grow = 0) => {
-    const steps = clamp(Math.round(p.r * 2.4), 16, 84);
+    const pts = markOutline(p.x, p.y, p.r, k, wob, phase, grow);
     g.beginPath();
-    for (let i = 0; i <= steps; i++) {
-      const a = (i / steps) * Math.PI * 2;
-      const rr = p.r * (1 + wob * k((a / (Math.PI * 2)) * 6 + phase)) + grow;
-      const px = p.x + Math.cos(a) * rr, py = p.y + Math.sin(a) * rr;
-      i ? g.lineTo(px, py) : g.moveTo(px, py);
-    }
+    for (let i = 0; i < pts.length; i++) i ? g.lineTo(pts[i][0], pts[i][1]) : g.moveTo(pts[i][0], pts[i][1]);
     g.closePath();
   };
 
@@ -194,7 +172,7 @@ export async function mountFoam(root: HTMLElement) {
     const col = fillOf(p, blockIdx);
     const r2 = rng(seed);
     const k = noise1(seed);
-    const wob = p.r < 3 ? 0 : clamp(0.058 - p.r * 0.0007, 0.032, 0.058);
+    const wob = wobbleFor(p.r);
     const ink = towards(base2, { L: 0.26, C: base2.C, h: base2.h }, 0.66);
 
     outline(p, k, wob);

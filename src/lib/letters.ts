@@ -16,8 +16,8 @@
  * largest marks: the key is the mark, at mark size, saying what its colour means.
  */
 import { noise1, clamp } from './draw.ts';
+import { ribbon, pathInk, type Pt, type InkPart } from './ink.ts';
 
-type Pt = [number, number];
 /** c: 0 polyline (corners stay corners) · 1 smooth open · 2 smooth closed */
 interface Stroke { p: Pt[]; c?: 0 | 1 | 2; }
 
@@ -113,56 +113,22 @@ function samples(st: Stroke, per: number): Pt[] {
   return out;
 }
 
-const NIB = 0.62;                    // the nib's angle, radians — held for the whole alphabet
+/** fill one ribbon's polygons — the geometry is in ink.ts so satori can emit the same shape */
+function fillRibbon(ctx: CanvasRenderingContext2D, r: { polys: Pt[][]; evenodd: boolean }) {
+  if (!r.polys.length) return;
+  ctx.beginPath();
+  for (const poly of r.polys) {
+    for (let i = 0; i < poly.length; i++) i ? ctx.lineTo(poly[i][0], poly[i][1]) : ctx.moveTo(poly[i][0], poly[i][1]);
+    ctx.closePath();
+  }
+  ctx.fill(r.evenodd ? 'evenodd' : 'nonzero');
+}
 
-/** ink one pen stroke: a nib walked along the path, filled as a ribbon rather than stroked,
- *  because a constant-width line is the thing that makes drawn type read as clip art */
 function inkStroke(
   ctx: CanvasRenderingContext2D, pts: Pt[], closed: boolean, base: number,
   wob: number, nz: (v: number) => number, phase: number, flat = false,
 ) {
-  const n = pts.length;
-  if (n < 2) return;
-  const mid: Pt[] = [], half: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const a = pts[closed ? (i - 1 + n) % n : Math.max(0, i - 1)];
-    const b = pts[closed ? (i + 1) % n : Math.min(n - 1, i + 1)];
-    let tx = b[0] - a[0], ty = b[1] - a[1];
-    const m = Math.hypot(tx, ty) || 1; tx /= m; ty /= m;
-    const t = i / (n - 1);
-    // taper: the pen lands and lifts. A closed form never lifts, so it keeps its weight, and
-    // neither does a data line — a curve whose ends thin out is a curve claiming its first
-    // and last years matter less. Asymmetric otherwise: it lands with weight and lifts off
-    // it, which is what a real stroke does and what stops every stroke reading as a leaf.
-    const taper = closed || flat ? 1
-      : 0.44 + 0.56 * Math.pow(Math.sin(Math.PI * clamp(t * 0.86 + 0.10, 0.02, 0.98)), 0.34);
-    const nib = 0.44 + 0.56 * Math.abs(Math.sin(Math.atan2(ty, tx) - NIB));
-    const breathe = 0.86 + 0.28 * (nz(t * 4 + phase * 3) * 0.5 + 0.5);
-    half.push(Math.max(0.28, base * taper * nib * breathe * 0.5));
-    const d = wob * nz(t * 3.1 + phase);
-    mid.push([pts[i][0] - ty * d, pts[i][1] + tx * d]);
-  }
-  const side = (sign: number, rev: boolean) => {
-    for (let k = 0; k < n; k++) {
-      const i = rev ? n - 1 - k : k;
-      const a = mid[closed ? (i - 1 + n) % n : Math.max(0, i - 1)];
-      const b = mid[closed ? (i + 1) % n : Math.min(n - 1, i + 1)];
-      let tx = b[0] - a[0], ty = b[1] - a[1];
-      const m = Math.hypot(tx, ty) || 1; tx /= m; ty /= m;
-      const x = mid[i][0] - ty * half[i] * sign, y = mid[i][1] + tx * half[i] * sign;
-      (k === 0 && rev === false) ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
-  };
-  ctx.beginPath();
-  if (closed) {
-    side(1, false); ctx.closePath();
-    ctx.moveTo(mid[n - 1][0], mid[n - 1][1]);       // inner wall, reversed, punches the counter
-    side(-1, true); ctx.closePath();
-    ctx.fill('evenodd');
-  } else {
-    side(1, false); side(-1, true); ctx.closePath();
-    ctx.fill();
-  }
+  fillRibbon(ctx, ribbon(pts, closed, base, wob, nz, phase, flat));
 }
 
 /**
@@ -175,16 +141,11 @@ export function inkPath(
   ctx: CanvasRenderingContext2D, pts: number[][], colour: string, alpha: number,
   width: number, opts: { seed?: number; wobble?: number; closed?: boolean; flat?: boolean } = {},
 ) {
-  if (pts.length < 2) return;
-  const nz = noise1((opts.seed ?? 11) >>> 0);
-  const wob = opts.wobble ?? 0.5;
   ctx.save();
   ctx.fillStyle = colour;
-  for (const [d, aScale, wScale, phase] of
-       [[1, 0.38, 0.86, 5.1], [0, 1, 1, 0]] as const) {
-    ctx.globalAlpha = alpha * aScale;
-    inkStroke(ctx, pts.map(([x, y]) => [x + d * 0.8, y + d * 0.7] as Pt), !!opts.closed,
-      width * wScale, wob, nz, phase, opts.flat !== false);
+  for (const part of pathInk(pts as Pt[], alpha, width, opts)) {
+    ctx.globalAlpha = part.alpha;
+    fillRibbon(ctx, part);
   }
   ctx.restore();
   ctx.globalAlpha = 1;
@@ -201,14 +162,14 @@ export interface GlyphOpts {
  * `x`,`y` is the centre of its cap box (or its left edge when aligned left).
  * Returns the advance width in px so a caller can lay a row out from real geometry.
  */
-export function inkGlyph(
-  ctx: CanvasRenderingContext2D, ch: string, x: number, y: number, cap: number,
-  colour: string, alpha: number, opts: GlyphOpts = {},
-): number {
+/** the letterform as geometry, so the share card can deboss a mark with the same hand */
+export function glyphInk(
+  ch: string, x: number, y: number, cap: number, alpha: number, opts: GlyphOpts = {},
+): { parts: InkPart[]; adv: number } {
   const k = ch.toUpperCase();
   const g = GLYPHS[k];
   const adv = glyphWidth(k) * cap;
-  if (!g) return adv;
+  if (!g) return { parts: [], adv };
   const seed = opts.seed ?? 1;
   const nz = noise1((seed ^ (k.charCodeAt(0) * 2654435761)) >>> 0);
   const base = cap * (opts.weight ?? 0.155);
@@ -218,18 +179,28 @@ export function inkGlyph(
   const y0 = y - cap / 2;
   const per = clamp(cap * 0.5, 6, 26);        // samples per unit of skeleton length
 
-  ctx.save();
-  ctx.fillStyle = colour;
+  const parts: InkPart[] = [];
   // two passes: a lighter underdraw laid slightly wide of the mark, then the stroke itself
   for (const [dx, dy, aScale, wScale, phase] of
        [[-1.0, 0.85, 0.40, 0.84, 6.3], [0.6, -0.55, 1, 1, 0]] as const) {
-    ctx.globalAlpha = alpha * aScale;
     for (const st of g) {
       const pts = samples(st, per).map(([px, py]) =>
         [x0 + px * cap + dx * off, y0 + py * cap + dy * off] as Pt);
-      inkStroke(ctx, pts, st.c === 2, base * wScale, wob, nz, phase, false);
+      const r = ribbon(pts, st.c === 2, base * wScale, wob, nz, phase, false);
+      if (r.polys.length) parts.push({ ...r, alpha: alpha * aScale });
     }
   }
+  return { parts, adv };
+}
+
+export function inkGlyph(
+  ctx: CanvasRenderingContext2D, ch: string, x: number, y: number, cap: number,
+  colour: string, alpha: number, opts: GlyphOpts = {},
+): number {
+  const { parts, adv } = glyphInk(ch, x, y, cap, alpha, opts);
+  ctx.save();
+  ctx.fillStyle = colour;
+  for (const p of parts) { ctx.globalAlpha = p.alpha; fillRibbon(ctx, p); }
   ctx.restore();
   ctx.globalAlpha = 1;
   return adv;

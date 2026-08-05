@@ -18,18 +18,27 @@ async function handler(req: Request): Promise<Response> {
   const yearRaw = Number(url.searchParams.get('year'));
   const o = url.origin;
 
-  const [shard, births, font] = await Promise.all([
+  // Every WEIGHT the card sets has to be loaded as its own face: satori falls back per
+  // weight, not per family, so a missing 300 silently renders in whatever is left.
+  const FACES = [
+    ['Outfit', 'Outfit-300.ttf', 300], ['Outfit', 'Outfit-500.ttf', 500], ['Outfit', 'Outfit-700.ttf', 700],
+    ['Archivo Narrow', 'ArchivoNarrow-400.ttf', 400], ['Archivo Narrow', 'ArchivoNarrow-600.ttf', 600],
+  ] as const;
+  const [shard, births, ...faces] = await Promise.all([
     fetch(`${o}/data/names/${shardKey(slug)}.json`).then(r => (r.ok ? r.json() : null)),
     fetch(`${o}/data/births.json`).then(r => (r.ok ? r.json() : [])),
-    fetch(`${o}/fonts/display.ttf`).then(r => r.arrayBuffer()),
+    ...FACES.map(([, file]) => fetch(`${o}/fonts/${file}`).then(r => r.arrayBuffer())),
   ]);
   const p = shard?.[slug];
   if (!p) return new Response('Not found', { status: 404 });
 
   const end = p.startYear + p.curve.length - 1;
+  const peak = Math.max(...p.curve, 0);
   const opts: CardOpts = {
     name: p.name, caption: p.caption, startYear: p.startYear, endYear: end,
     curve: p.curve, peakYear: p.peakYear, peakCount: p.peakCount,
+    peakShare: p.maxShare * 100,
+    spanYears: peak ? p.curve.filter((v: number) => v >= peak / 2).length : 0,
     archetypeLabel: archetypeOf(p.archetype).label,
   };
   if (Number.isFinite(yearRaw)) {
@@ -42,7 +51,7 @@ async function handler(req: Request): Promise<Response> {
 
   return new ImageResponse(cardTree(opts) as any, {
     width: 1200, height: 630,
-    fonts: [{ name: 'Gelasio', data: font, weight: 400, style: 'normal' }],
+    fonts: FACES.map(([name, , weight], i) => ({ name, data: faces[i], weight, style: 'normal' as const })),
   });
 }
 

@@ -51,26 +51,42 @@ export function towards(a: Lch, b: Lch, t: number): Lch {
 
 export const css = (o: Lch, alpha = 1) => oklch(o.L, o.C, o.h, alpha);
 
-/** many translucent irregular marks, never a flat fill */
-export function speckle(
-  ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, count: number,
-  colour: string, rand: () => number,
+export interface Speck { poly: [number, number][]; alpha: number; }
+
+/** many translucent irregular marks, never a flat fill — as geometry, so the share card
+ *  (satori, no canvas) grains its marks from the same generator the page does */
+export function speckShapes(
+  cx: number, cy: number, r: number, count: number, rand: () => number,
   { rMin = 0.6, rMax = 2.4, aMin = 0.06, aMax = 0.34 } = {},
-) {
+): Speck[] {
+  const out: Speck[] = [];
   for (let i = 0; i < count; i++) {
     const t = rand(), ang = rand() * Math.PI * 2;
     const rr = r * Math.sqrt(t);
     const x = cx + Math.cos(ang) * rr, y = cy + Math.sin(ang) * rr;
     const s = rMin + rand() * (rMax - rMin);
-    ctx.globalAlpha = aMin + rand() * (aMax - aMin);
-    ctx.fillStyle = colour;
-    ctx.beginPath();
+    const alpha = aMin + rand() * (aMax - aMin);
+    const poly: [number, number][] = [];
     const pts = 5 + ((rand() * 3) | 0);
     for (let p = 0; p <= pts; p++) {
       const a2 = (p / pts) * Math.PI * 2, rad = s * (0.62 + rand() * 0.72);
-      const px = x + Math.cos(a2) * rad, py = y + Math.sin(a2) * rad;
-      p ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      poly.push([x + Math.cos(a2) * rad, y + Math.sin(a2) * rad]);
     }
+    out.push({ poly, alpha });
+  }
+  return out;
+}
+
+export function speckle(
+  ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, count: number,
+  colour: string, rand: () => number,
+  opts: { rMin?: number; rMax?: number; aMin?: number; aMax?: number } = {},
+) {
+  ctx.fillStyle = colour;
+  for (const { poly, alpha } of speckShapes(cx, cy, r, count, rand, opts)) {
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    for (let p = 0; p < poly.length; p++) p ? ctx.lineTo(poly[p][0], poly[p][1]) : ctx.moveTo(poly[p][0], poly[p][1]);
     ctx.closePath();
     ctx.fill();
   }
