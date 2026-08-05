@@ -112,7 +112,10 @@ async function brandCard() {
  * importing one of them draws all 5,002 cards as a side effect of the import, which is eight
  * minutes and a very confusing eight minutes.
  */
-const isEntry = !!process.argv[1] && fileURLToPath(import.meta.url) === pathToFileURL(process.argv[1]).href;
+// Compare URL to URL. Comparing fileURLToPath(import.meta.url) to a file:// href is a path
+// against a URL, which is never equal — so the guard read false even when this WAS the
+// entry point, `npm run og` drew nothing, and the deploy shipped with no cards at all.
+const isEntry = !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (!isMainThread && workerData?.og) {
   // a worker: draw its slice, reporting progress as deltas so the parent can total them
